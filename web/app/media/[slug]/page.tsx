@@ -26,8 +26,11 @@ async function getMediaItem(slug: string) {
   const { data } = await fetchStrapi<
     StrapiResponse<StrapiEntry<MediaItemAttributes>[]>
   >("/media-items", {
-    "filters[Slug][$eq]": slug,
-    "populate": "*",
+    params: {
+      "filters[Slug][$eq]": slug,
+      "populate": "*",
+    },
+    fallback: { data: [], meta: {} },
   });
 
   return data[0] ?? null;

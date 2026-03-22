@@ -19,7 +19,10 @@ export const metadata: Metadata = {
 export default async function DocumentsPage() {
   const { data } = await fetchStrapi<
     StrapiResponse<StrapiEntry<DocumentAttributes>[]>
-  >("/documents", { "populate": "*" });
+  >("/documents", {
+    params: { "populate": "*" },
+    fallback: { data: [], meta: {} },
+  });
 
   const grouped = new Map<string, StrapiEntry<DocumentAttributes>[]>();
 

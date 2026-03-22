@@ -18,7 +18,10 @@ export const metadata: Metadata = {
 export default async function PartnersPage() {
   const { data } = await fetchStrapi<
     StrapiResponse<StrapiEntry<PartnerAttributes>[]>
-  >("/partners", { "populate": "*" });
+  >("/partners", {
+    params: { "populate": "*" },
+    fallback: { data: [], meta: {} },
+  });
 
   const activePartners = data.filter((p) => p.attributes.isActive);
 

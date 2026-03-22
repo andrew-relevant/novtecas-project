@@ -18,8 +18,11 @@ async function getPortfolioItem(slug: string) {
   const res = await fetchStrapi<
     StrapiResponse<StrapiEntry<PortfolioItemAttributes>[]>
   >("/portfolio-items", {
-    "filters[Slug][$eq]": slug,
-    "populate": "*",
+    params: {
+      "filters[Slug][$eq]": slug,
+      "populate": "*",
+    },
+    fallback: { data: [], meta: {} },
   });
 
   return res.data[0] ?? null;

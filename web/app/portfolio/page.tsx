@@ -13,9 +13,12 @@ export default async function PortfolioPage() {
   const { data: items } = await fetchStrapi<
     StrapiResponse<StrapiEntry<PortfolioItemAttributes>[]>
   >("/portfolio-items", {
-    "populate": "*",
-    "sort[0]": "Date:desc",
-    "pagination[pageSize]": "100",
+    params: {
+      "populate": "*",
+      "sort[0]": "Date:desc",
+      "pagination[pageSize]": "100",
+    },
+    fallback: { data: [], meta: {} },
   });
 
   return (

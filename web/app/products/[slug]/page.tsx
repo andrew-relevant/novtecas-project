@@ -21,13 +21,16 @@ async function getProduct(slug: string) {
   const res = await fetchStrapi<StrapiResponse<StrapiEntry<ProductAttributes>[]>>(
     "/products",
     {
-      "filters[Slug][$eq]": slug,
-      "populate[Image]": "*",
-      "populate[Gallery]": "*",
-      "populate[category]": "*",
-      "populate[Related_Products][populate]": "*",
-      "populate[reviews]": "*",
-      "populate[seo][populate]": "*",
+      params: {
+        "filters[Slug][$eq]": slug,
+        "populate[Image]": "*",
+        "populate[Gallery]": "*",
+        "populate[category]": "*",
+        "populate[Related_Products][populate]": "*",
+        "populate[reviews]": "*",
+        "populate[seo][populate]": "*",
+      },
+      fallback: { data: [], meta: {} },
     },
   );
 

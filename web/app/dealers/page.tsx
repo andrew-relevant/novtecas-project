@@ -22,8 +22,11 @@ export default async function DealersPage() {
 
   const [dealersRes, pageRes] = await Promise.all([
     fetchStrapi<StrapiResponse<StrapiEntry<DealerAttributes>[]>>("/dealers", {
-      "populate": "*",
-      "pagination[pageSize]": "100",
+      params: {
+        "populate": "*",
+        "pagination[pageSize]": "100",
+      },
+      fallback: { data: [], meta: {} },
     }),
     fetchStrapi<StrapiResponse<StrapiEntry<PageDealersAttributes>>>(
       "/page-dealers",

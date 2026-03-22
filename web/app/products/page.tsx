@@ -12,13 +12,19 @@ import { ProductsClient } from "./products-client";
 export default async function ProductsPage() {
   const [productsRes, categoriesRes] = await Promise.all([
     fetchStrapi<StrapiResponse<StrapiEntry<ProductAttributes>[]>>("/products", {
-      "populate": "*",
-      "pagination[pageSize]": "100",
-      "sort[0]": "Title:asc",
+      params: {
+        "populate": "*",
+        "pagination[pageSize]": "100",
+        "sort[0]": "Title:asc",
+      },
+      fallback: { data: [], meta: {} },
     }),
     fetchStrapi<StrapiResponse<StrapiEntry<ProductCategoryAttributes>[]>>(
       "/product-categories",
-      { "pagination[pageSize]": "100" },
+      {
+        params: { "pagination[pageSize]": "100" },
+        fallback: { data: [], meta: {} },
+      },
     ),
   ]);
 

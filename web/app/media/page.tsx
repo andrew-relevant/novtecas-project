@@ -17,9 +17,12 @@ export default async function MediaPage() {
   const { data } = await fetchStrapi<
     StrapiResponse<StrapiEntry<MediaItemAttributes>[]>
   >("/media-items", {
-    "populate": "*",
-    "sort": "Date:desc",
-    "pagination[pageSize]": "100",
+    params: {
+      "populate": "*",
+      "sort": "Date:desc",
+      "pagination[pageSize]": "100",
+    },
+    fallback: { data: [], meta: {} },
   });
 
   const items = data.map((entry) => ({
