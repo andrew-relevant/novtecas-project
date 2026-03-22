@@ -21,6 +21,8 @@ services:
     build:
       context: ./cms
       dockerfile: Dockerfile.prod
+      args:
+        PUBLIC_URL: ${PUBLIC_URL:-}
     restart: always
     env_file: .env
     environment:
@@ -28,6 +30,7 @@ services:
       # Слушать все интерфейсы внутри контейнера (перекрывает .env с localhost для локальной разработки)
       STRAPI_HOST: 0.0.0.0
       STRAPI_PORT: 1337
+      PUBLIC_URL: ${PUBLIC_URL:-}
       DATABASE_CLIENT: ${DATABASE_CLIENT}
       DATABASE_HOST: ${DATABASE_HOST}
       DATABASE_PORT: ${DATABASE_PORT}

@@ -10,6 +10,8 @@ WORKDIR /opt/app
 COPY --from=deps /opt/app/node_modules ./node_modules
 COPY . .
 ENV NODE_ENV=production
+ARG PUBLIC_URL=""
+ENV PUBLIC_URL=${PUBLIC_URL}
 RUN npm run build
 
 FROM node:20-alpine AS runner
