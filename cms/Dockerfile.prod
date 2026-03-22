@@ -1,0 +1,21 @@
+FROM node:20-alpine AS deps
+RUN apk add --no-cache build-base gcc autoconf automake zlib-dev libpng-dev vips-dev
+WORKDIR /opt/app
+COPY package.json package-lock.json* ./
+RUN npm install --legacy-peer-deps
+
+FROM node:20-alpine AS builder
+RUN apk add --no-cache vips-dev
+WORKDIR /opt/app
+COPY --from=deps /opt/app/node_modules ./node_modules
+COPY . .
+ENV NODE_ENV=production
+RUN npm run build
+
+FROM node:20-alpine AS runner
+RUN apk add --no-cache vips-dev
+WORKDIR /opt/app
+ENV NODE_ENV=production
+COPY --from=builder /opt/app ./
+EXPOSE 1337
+CMD ["npm", "run", "start"]
