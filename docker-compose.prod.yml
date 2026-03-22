@@ -25,6 +25,9 @@ services:
     env_file: .env
     environment:
       NODE_ENV: production
+      # Слушать все интерфейсы внутри контейнера (перекрывает .env с localhost для локальной разработки)
+      STRAPI_HOST: 0.0.0.0
+      STRAPI_PORT: 1337
       DATABASE_CLIENT: ${DATABASE_CLIENT}
       DATABASE_HOST: ${DATABASE_HOST}
       DATABASE_PORT: ${DATABASE_PORT}
@@ -46,7 +49,14 @@ services:
       db:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "node", "-e", "fetch('http://localhost:1337/_health').then(r=>{if(r.ok||r.status===204)process.exit(0);else process.exit(1)}).catch(()=>process.exit(1))"]
+      # Strapi 4 не отдаёт GET /_health; /admin всегда доступен при поднятом сервере
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:1337/admin').then(r=>process.exit(r.status<500?0:1)).catch(()=>process.exit(1))",
+        ]
       interval: 15s
       timeout: 5s
       retries: 10
