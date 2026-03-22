@@ -1,0 +1,52 @@
+{
+  "kind": "collectionType",
+  "collectionName": "media_items",
+  "info": {
+    "singularName": "media-item",
+    "pluralName": "media-items",
+    "displayName": "MediaItem",
+    "description": "Новости, статьи и публикации"
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "Title": {
+      "type": "string",
+      "required": true
+    },
+    "Slug": {
+      "type": "uid",
+      "targetField": "Title",
+      "required": true
+    },
+    "Date": {
+      "type": "date"
+    },
+    "Type": {
+      "type": "enumeration",
+      "enum": ["news", "article", "video"],
+      "required": true,
+      "default": "news"
+    },
+    "Short_Text": {
+      "type": "text"
+    },
+    "Full_Text": {
+      "type": "richtext"
+    },
+    "Image_Preview": {
+      "type": "media",
+      "multiple": false,
+      "required": false,
+      "allowedTypes": ["images"]
+    },
+    "Gallery": {
+      "type": "media",
+      "multiple": true,
+      "required": false,
+      "allowedTypes": ["images", "videos"]
+    }
+  }
+}

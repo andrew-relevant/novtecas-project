@@ -1,0 +1,26 @@
+{
+  "collectionName": "components_shared_contact_infos",
+  "info": {
+    "displayName": "ContactInfo",
+    "icon": "phone",
+    "description": "Контактные данные"
+  },
+  "options": {},
+  "attributes": {
+    "phones": {
+      "type": "json",
+      "required": false
+    },
+    "emails": {
+      "type": "json",
+      "required": false
+    },
+    "addresses": {
+      "type": "json",
+      "required": false
+    },
+    "workingHours": {
+      "type": "string"
+    }
+  }
+}

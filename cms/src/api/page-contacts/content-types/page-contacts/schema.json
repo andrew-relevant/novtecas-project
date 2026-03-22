@@ -1,0 +1,19 @@
+{
+  "kind": "singleType",
+  "collectionName": "page_contacts",
+  "info": {
+    "singularName": "page-contacts",
+    "pluralName": "page-contacts-plural",
+    "displayName": "PageContacts",
+    "description": "Страница «Контакты»"
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "Contact_Info": {
+      "type": "richtext"
+    }
+  }
+}

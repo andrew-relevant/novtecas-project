@@ -1,0 +1,25 @@
+{
+  "kind": "singleType",
+  "collectionName": "page_productions",
+  "info": {
+    "singularName": "page-production",
+    "pluralName": "page-productions",
+    "displayName": "PageProduction",
+    "description": "Страница «Производство»"
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "Intro_Text": {
+      "type": "text"
+    },
+    "Gallery": {
+      "type": "media",
+      "multiple": true,
+      "required": false,
+      "allowedTypes": ["images"]
+    }
+  }
+}

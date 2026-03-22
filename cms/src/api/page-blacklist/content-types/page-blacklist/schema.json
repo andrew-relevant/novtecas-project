@@ -1,0 +1,19 @@
+{
+  "kind": "singleType",
+  "collectionName": "page_blacklists",
+  "info": {
+    "singularName": "page-blacklist",
+    "pluralName": "page-blacklists",
+    "displayName": "PageBlacklist",
+    "description": "Страница «Чёрный список»"
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "Text_Content": {
+      "type": "richtext"
+    }
+  }
+}

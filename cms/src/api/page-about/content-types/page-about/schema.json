@@ -1,0 +1,31 @@
+{
+  "kind": "singleType",
+  "collectionName": "page_abouts",
+  "info": {
+    "singularName": "page-about",
+    "pluralName": "page-abouts",
+    "displayName": "PageAbout",
+    "description": "Страница «О компании»"
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "Intro_Text": {
+      "type": "text"
+    },
+    "Full_Text": {
+      "type": "richtext"
+    },
+    "Sidebar_Image": {
+      "type": "media",
+      "multiple": false,
+      "required": false,
+      "allowedTypes": ["images"]
+    },
+    "Requisites_Table": {
+      "type": "json"
+    }
+  }
+}

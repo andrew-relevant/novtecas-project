@@ -1,0 +1,19 @@
+{
+  "kind": "singleType",
+  "collectionName": "page_dealers",
+  "info": {
+    "singularName": "page-dealers",
+    "pluralName": "page-dealers-plural",
+    "displayName": "PageDealers",
+    "description": "Страница «Дилеры»"
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "Intro_Text": {
+      "type": "text"
+    }
+  }
+}

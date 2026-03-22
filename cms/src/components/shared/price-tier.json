@@ -1,0 +1,23 @@
+{
+  "collectionName": "components_shared_price_tiers",
+  "info": {
+    "displayName": "PriceTier",
+    "icon": "priceTag",
+    "description": "Тиражное ценообразование"
+  },
+  "options": {},
+  "attributes": {
+    "minQtyKg": {
+      "type": "integer",
+      "required": true
+    },
+    "price": {
+      "type": "decimal",
+      "required": true
+    },
+    "label": {
+      "type": "string",
+      "required": true
+    }
+  }
+}
