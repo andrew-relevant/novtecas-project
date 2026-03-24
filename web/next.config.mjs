@@ -13,6 +13,10 @@ const nextConfig = {
         hostname: "cms",
         port: "1337",
       },
+      {
+        protocol: "https",
+        hostname: "cms.novtecas.ru",
+      },
     ],
   },
   async redirects() {
