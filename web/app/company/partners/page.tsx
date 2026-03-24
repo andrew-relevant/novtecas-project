@@ -1,11 +1,7 @@
 import { Metadata } from "next";
 import Image from "next/image";
 import { fetchStrapi, getStrapiMedia } from "@/lib/strapi";
-import {
-  StrapiResponse,
-  StrapiEntry,
-  PartnerAttributes,
-} from "@/lib/types";
+import { StrapiResponse, Partner } from "@/lib/types";
 import { Breadcrumbs } from "@/components/breadcrumbs";
 import { Card, CardContent } from "@/components/ui/card";
 import { ExternalLink } from "lucide-react";
@@ -16,14 +12,12 @@ export const metadata: Metadata = {
 };
 
 export default async function PartnersPage() {
-  const { data } = await fetchStrapi<
-    StrapiResponse<StrapiEntry<PartnerAttributes>[]>
-  >("/partners", {
+  const { data } = await fetchStrapi<StrapiResponse<Partner[]>>("/partners", {
     params: { "populate": "*" },
     fallback: { data: [], meta: {} },
   });
 
-  const activePartners = data.filter((p) => p.attributes.isActive);
+  const activePartners = data.filter((p) => p.isActive);
 
   return (
     <>
@@ -36,8 +30,8 @@ export default async function PartnersPage() {
       {activePartners.length > 0 ? (
         <div className="mt-8 grid gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
           {activePartners.map((partner) => {
-            const logoUrl = partner.attributes.logo?.data
-              ? getStrapiMedia(partner.attributes.logo.data.attributes.url)
+            const logoUrl = partner.logo
+              ? getStrapiMedia(partner.logo.url)
               : null;
 
             const content = (
@@ -46,7 +40,7 @@ export default async function PartnersPage() {
                   <div className="relative mb-4 h-20 w-full">
                     <Image
                       src={logoUrl}
-                      alt={partner.attributes.name}
+                      alt={partner.name}
                       fill
                       className="object-contain"
                       sizes="200px"
@@ -55,13 +49,13 @@ export default async function PartnersPage() {
                 ) : (
                   <div className="mb-4 flex h-20 w-full items-center justify-center rounded bg-muted">
                     <span className="text-2xl font-bold text-muted-foreground">
-                      {partner.attributes.name.charAt(0)}
+                      {partner.name.charAt(0)}
                     </span>
                   </div>
                 )}
                 <CardContent className="p-0 text-center">
-                  <p className="font-medium">{partner.attributes.name}</p>
-                  {partner.attributes.url && (
+                  <p className="font-medium">{partner.name}</p>
+                  {partner.url && (
                     <span className="mt-1 inline-flex items-center gap-1 text-xs text-muted-foreground">
                       <ExternalLink className="h-3 w-3" />
                       Перейти на сайт
@@ -71,10 +65,10 @@ export default async function PartnersPage() {
               </Card>
             );
 
-            return partner.attributes.url ? (
+            return partner.url ? (
               <a
                 key={partner.id}
-                href={partner.attributes.url}
+                href={partner.url}
                 target="_blank"
                 rel="noopener noreferrer"
               >

@@ -5,15 +5,11 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ProductCard } from "@/components/product-card";
 import { ModalForm } from "@/components/modal-form";
 import { BuyForm } from "@/components/forms/buy-form";
-import type {
-  StrapiEntry,
-  ProductAttributes,
-  ProductCategoryAttributes,
-} from "@/lib/types";
+import type { Product, ProductCategory } from "@/lib/types";
 
 interface ProductsClientProps {
-  products: StrapiEntry<ProductAttributes>[];
-  categories: StrapiEntry<ProductCategoryAttributes>[];
+  products: Product[];
+  categories: ProductCategory[];
 }
 
 export function ProductsClient({ products, categories }: ProductsClientProps) {
@@ -24,12 +20,12 @@ export function ProductsClient({ products, categories }: ProductsClientProps) {
   const filtered = useMemo(() => {
     if (activeCategory === "all") return products;
     return products.filter(
-      (p) => p.attributes.category?.data?.attributes.slug === activeCategory,
+      (p) => p.category?.slug === activeCategory,
     );
   }, [products, activeCategory]);
 
-  const inStock = filtered.filter((p) => !p.attributes.isCustomOrder);
-  const customOrder = filtered.filter((p) => p.attributes.isCustomOrder);
+  const inStock = filtered.filter((p) => !p.isCustomOrder);
+  const customOrder = filtered.filter((p) => p.isCustomOrder);
 
   function handleBuyClick(title: string) {
     setSelectedProduct(title);
@@ -46,8 +42,8 @@ export function ProductsClient({ products, categories }: ProductsClientProps) {
         <TabsList className="flex flex-wrap gap-1">
           <TabsTrigger value="all">Все</TabsTrigger>
           {categories.map((cat) => (
-            <TabsTrigger key={cat.id} value={cat.attributes.slug}>
-              {cat.attributes.name}
+            <TabsTrigger key={cat.id} value={cat.slug}>
+              {cat.name}
             </TabsTrigger>
           ))}
         </TabsList>

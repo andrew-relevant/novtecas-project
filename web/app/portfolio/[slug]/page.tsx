@@ -4,26 +4,23 @@ import { Breadcrumbs } from "@/components/breadcrumbs";
 import { RichText } from "@/components/rich-text";
 import { Gallery } from "@/components/gallery";
 import { fetchStrapi } from "@/lib/strapi";
-import type {
-  StrapiResponse,
-  StrapiEntry,
-  PortfolioItemAttributes,
-} from "@/lib/types";
+import type { StrapiResponse, PortfolioItem } from "@/lib/types";
 
 interface PortfolioItemPageProps {
   params: Promise<{ slug: string }>;
 }
 
 async function getPortfolioItem(slug: string) {
-  const res = await fetchStrapi<
-    StrapiResponse<StrapiEntry<PortfolioItemAttributes>[]>
-  >("/portfolio-items", {
-    params: {
-      "filters[Slug][$eq]": slug,
-      "populate": "*",
+  const res = await fetchStrapi<StrapiResponse<PortfolioItem[]>>(
+    "/portfolio-items",
+    {
+      params: {
+        "filters[Slug][$eq]": slug,
+        "populate": "*",
+      },
+      fallback: { data: [], meta: {} },
     },
-    fallback: { data: [], meta: {} },
-  });
+  );
 
   return res.data[0] ?? null;
 }
@@ -36,8 +33,8 @@ export async function generateMetadata({
   if (!item) return { title: "Проект не найден" };
 
   return {
-    title: item.attributes.Title,
-    description: item.attributes.Short_Text ?? undefined,
+    title: item.Title,
+    description: item.Short_Text ?? undefined,
   };
 }
 
@@ -48,13 +45,13 @@ export default async function PortfolioItemPage({
   const item = await getPortfolioItem(slug);
   if (!item) notFound();
 
-  const { Title, Date: date, Full_Text, Gallery: gallery } = item.attributes;
+  const { Title, Date: date, Full_Text, Gallery: gallery } = item;
 
-  const galleryItems = (gallery?.data ?? []).map((g) => ({
-    url: g.attributes.url,
-    alt: g.attributes.alternativeText ?? Title,
-    width: g.attributes.width,
-    height: g.attributes.height,
+  const galleryItems = (gallery ?? []).map((g) => ({
+    url: g.url,
+    alt: g.alternativeText ?? Title,
+    width: g.width,
+    height: g.height,
   }));
 
   return (

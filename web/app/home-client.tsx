@@ -6,10 +6,10 @@ import { ProductCard } from "@/components/product-card";
 import { ModalForm } from "@/components/modal-form";
 import { BuyForm } from "@/components/forms/buy-form";
 import { DealerForm } from "@/components/forms/dealer-form";
-import type { StrapiEntry, ProductAttributes } from "@/lib/types";
+import type { Product } from "@/lib/types";
 
 interface HomeClientProps {
-  featuredProducts: StrapiEntry<ProductAttributes>[];
+  featuredProducts: Product[];
 }
 
 export function HomeClient({ featuredProducts }: HomeClientProps) {

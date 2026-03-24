@@ -10,12 +10,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { fetchStrapi } from "@/lib/strapi";
-import type {
-  StrapiResponse,
-  StrapiEntry,
-  ProductAttributes,
-  SiteSettingsAttributes,
-} from "@/lib/types";
+import type { StrapiResponse, Product, SiteSettings } from "@/lib/types";
 import { getStrapiMedia } from "@/lib/strapi";
 import { HomeClient } from "./home-client";
 import { HeroVideo } from "@/components/hero-video";
@@ -44,7 +39,7 @@ const APPLICATION_AREAS = [
 
 export default async function HomePage() {
   const [productsRes, settingsRes] = await Promise.all([
-    fetchStrapi<StrapiResponse<StrapiEntry<ProductAttributes>[]>>("/products", {
+    fetchStrapi<StrapiResponse<Product[]>>("/products", {
       params: {
         "populate": "*",
         "filters[isFeatured][$eq]": "true",
@@ -52,16 +47,16 @@ export default async function HomePage() {
       },
       fallback: { data: [] },
     }),
-    fetchStrapi<StrapiResponse<StrapiEntry<SiteSettingsAttributes>>>("/site-setting", {
+    fetchStrapi<StrapiResponse<SiteSettings>>("/site-setting", {
       params: { "populate": "*" },
       fallback: { data: null },
     }),
   ]);
   const products = productsRes.data ?? [];
-  const settings = settingsRes.data?.attributes ?? null;
+  const settings = settingsRes.data ?? null;
 
-  const heroVideoUrl = getStrapiMedia(settings?.heroVideo?.data?.attributes?.url ?? null);
-  const heroPosterUrl = getStrapiMedia(settings?.heroPoster?.data?.attributes?.url ?? null);
+  const heroVideoUrl = getStrapiMedia(settings?.heroVideo?.url ?? null);
+  const heroPosterUrl = getStrapiMedia(settings?.heroPoster?.url ?? null);
 
   return (
     <>

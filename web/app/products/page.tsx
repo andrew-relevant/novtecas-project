@@ -1,17 +1,12 @@
 import { Breadcrumbs } from "@/components/breadcrumbs";
 import { Calculator } from "@/components/calculator";
 import { fetchStrapi } from "@/lib/strapi";
-import type {
-  StrapiResponse,
-  StrapiEntry,
-  ProductAttributes,
-  ProductCategoryAttributes,
-} from "@/lib/types";
+import type { StrapiResponse, Product, ProductCategory } from "@/lib/types";
 import { ProductsClient } from "./products-client";
 
 export default async function ProductsPage() {
   const [productsRes, categoriesRes] = await Promise.all([
-    fetchStrapi<StrapiResponse<StrapiEntry<ProductAttributes>[]>>("/products", {
+    fetchStrapi<StrapiResponse<Product[]>>("/products", {
       params: {
         "populate": "*",
         "pagination[pageSize]": "100",
@@ -19,7 +14,7 @@ export default async function ProductsPage() {
       },
       fallback: { data: [], meta: {} },
     }),
-    fetchStrapi<StrapiResponse<StrapiEntry<ProductCategoryAttributes>[]>>(
+    fetchStrapi<StrapiResponse<ProductCategory[]>>(
       "/product-categories",
       {
         params: { "pagination[pageSize]": "100" },

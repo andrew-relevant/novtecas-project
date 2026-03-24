@@ -15,7 +15,7 @@ import { useState } from "react";
 import Link from "next/link";
 
 interface ReviewFormProps {
-  productId: number;
+  productId: string;
   onSuccess?: () => void;
 }
 

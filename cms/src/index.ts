@@ -1,5 +1,5 @@
 async function ensurePublicPermissions(strapi) {
-  const publicRole = await strapi
+  const publicRole = await strapi.db
     .query("plugin::users-permissions.role")
     .findOne({ where: { type: "public" } });
 
@@ -37,12 +37,12 @@ async function ensurePublicPermissions(strapi) {
   ];
 
   for (const action of readActions) {
-    const existing = await strapi
+    const existing = await strapi.db
       .query("plugin::users-permissions.permission")
       .findOne({ where: { action, role: publicRole.id } });
 
     if (!existing) {
-      await strapi
+      await strapi.db
         .query("plugin::users-permissions.permission")
         .create({ data: { action, role: publicRole.id, enabled: true } });
     }
@@ -90,7 +90,7 @@ export default {
     await ensureAdminUser(strapi);
     await ensurePublicPermissions(strapi);
 
-    const productCount = await strapi.entityService.count("api::product.product");
+    const productCount = await strapi.documents("api::product.product").count();
     if (productCount > 0) {
       strapi.log.info("Seed: data already exists, skipping.");
       return;
@@ -99,34 +99,37 @@ export default {
     strapi.log.info("Seed: populating initial content...");
 
     // --- Product Categories ---
-    const catCold = await strapi.entityService.create("api::product-category.product-category", {
+    const catCold = await strapi.documents("api::product-category.product-category").create({
       data: { name: "Холодный асфальт", slug: "cold-asphalt", description: "Всепогодная асфальтобетонная смесь, модифицированная концентратом Perma-Patch — новый вид материала для быстрого, надежного и безопасного круглогодичного ремонта дорожных покрытий." },
+      status: "published",
     });
-    const catBags = await strapi.entityService.create("api::product-category.product-category", {
+    const catBags = await strapi.documents("api::product-category.product-category").create({
       data: { name: "Мешки для пакетирования", slug: "packaging-bags", description: "Мешки полиэтиленовые с заваренным дном, без боковых складок, для пакетирования холодного асфальта." },
+      status: "published",
     });
 
     // --- Products ---
     const productsData = [
-      { Title: "Холодный асфальт 35 кг (до 1000 кг)", Slug: "cold-asphalt-35kg-under-1000", Short_Description: "Цена при оплате менее 1000 кг. Стандартная фасовка в полиэтиленовых мешках.", Price_Rub: 680, Unit_of_Measure: "мешок", Weight: "35 кг", isFeatured: true, isCustomOrder: false, category: catCold.id, Full_Description: "<p>Холодный асфальт Perma Patch в полиэтиленовых мешках по 35 кг — стандартная упаковка, всегда в наличии на складе. Идеально подходит для ямочного ремонта дорог, тротуаров и парковок.</p><p>Состав может уплотняться даже при -27°С, сохраняя подвижность и качество материала.</p>", priceTiers: [{ minQtyKg: 0, price: 680, label: "до 1000 кг" }, { minQtyKg: 1000, price: 640, label: "от 1000 кг" }, { minQtyKg: 5000, price: 610, label: "от 5000 кг" }] },
-      { Title: "Холодный асфальт 35 кг (от 1000 кг)", Slug: "cold-asphalt-35kg-from-1000", Short_Description: "Цена при оплате более 1000 кг. Стандартная фасовка в полиэтиленовых мешках.", Price_Rub: 640, Unit_of_Measure: "мешок", Weight: "35 кг", isFeatured: true, isCustomOrder: false, category: catCold.id, Full_Description: "<p>Холодный асфальт Perma Patch в мешках по 35 кг. Оптовая цена при заказе от 1000 кг. Стандартная упаковка, всегда в наличии.</p>" },
-      { Title: "Холодный асфальт 35 кг (от 5000 кг)", Slug: "cold-asphalt-35kg-from-5000", Short_Description: "Оптовая партия от 5000 кг. Максимально выгодная цена.", Price_Rub: 610, Unit_of_Measure: "мешок", Weight: "35 кг", isFeatured: true, isCustomOrder: false, category: catCold.id, Full_Description: "<p>Холодный асфальт Perma Patch — лучшая цена при крупном опте от 5000 кг. Упаковка 35 кг, всегда в наличии.</p>" },
-      { Title: "Холодный асфальт 50 кг (полипропилен)", Slug: "cold-asphalt-50kg", Short_Description: "Под спецзаказ при определённой партии. Полипропиленовые мешки.", Price_Rub: 760, Unit_of_Measure: "мешок", Weight: "50 кг", isFeatured: false, isCustomOrder: true, category: catCold.id, Full_Description: "<p>Холодный асфальт в полипропиленовых мешках по 50 кг. Производится под спецзаказ при определённой партии. Уточняйте актуальную цену у менеджера.</p>" },
-      { Title: "Холодный асфальт 30 кг (полипропилен)", Slug: "cold-asphalt-30kg", Short_Description: "Под спецзаказ при определённой партии. Минимальная партия — 1 тонна.", Price_Rub: 470, Unit_of_Measure: "мешок", Weight: "30 кг", isFeatured: false, isCustomOrder: true, category: catCold.id, Full_Description: "<p>Холодный асфальт Perma Patch в мешках по 30 кг. Фасовка в полипропилен под заказ. Минимальная партия — 1 тонна.</p>" },
-      { Title: "Холодный асфальт 1000 кг (биг-бег)", Slug: "cold-asphalt-1000kg", Short_Description: "Холодный асфальт Perma Patch в биг-бегах по 1000 кг.", Price_Rub: 17910, Unit_of_Measure: "тонна", Weight: "1000 кг", isFeatured: false, isCustomOrder: true, category: catCold.id, Full_Description: "<p>Холодный асфальт Perma Patch фасовка в биг-бегах по 1000 кг. Экономичный вариант для крупных объёмов работ.</p>" },
-      { Title: "Красный холодный асфальт Perma Patch COLOR (мешки)", Slug: "red-cold-asphalt-bags", Short_Description: "Цветной холодный асфальт для выделения дорожных зон и покрытий.", Price_Rub: 1565, Unit_of_Measure: "мешок", Weight: "35 кг", isFeatured: false, isCustomOrder: true, category: catCold.id, Full_Description: "<p>Красный холодный асфальт Perma Patch COLOR — декоративное покрытие для выделения пешеходных зон, велодорожек и специальных площадок. Уточняйте актуальную цену.</p>" },
-      { Title: "Вяжущее для холодного асфальта 205 л (185 кг)", Slug: "binder-perma-patch-205l", Short_Description: "Вяжущее для производства холодного асфальта Perma Patch.", Price_Rub: 34385, Unit_of_Measure: "бочка", Weight: "185 кг", isFeatured: false, isCustomOrder: true, category: catCold.id, Full_Description: "<p>Вяжущее (концентрат) для производства холодного асфальта по канадской технологии Perma Patch. Объём 205 литров (185 кг).</p>" },
-      { Title: "Мешки полиэтиленовые для холодного асфальта", Slug: "pe-bags-cold-asphalt", Short_Description: "Мешки полиэтиленовые с заваренным дном, для пакетирования холодного асфальта по 25 или 30 кг.", Price_Rub: 95, Unit_of_Measure: "шт.", Weight: "—", isFeatured: false, isCustomOrder: false, category: catBags.id, Full_Description: "<p>Мешки полиэтиленовые с заваренным дном, без боковых складок, для пакетирования холодного асфальта по 25 или 30 кг.</p>" },
+      { Title: "Холодный асфальт 35 кг (до 1000 кг)", Slug: "cold-asphalt-35kg-under-1000", Short_Description: "Цена при оплате менее 1000 кг. Стандартная фасовка в полиэтиленовых мешках.", Price_Rub: 680, Unit_of_Measure: "мешок", Weight: "35 кг", isFeatured: true, isCustomOrder: false, category: catCold.documentId, Full_Description: "<p>Холодный асфальт Perma Patch в полиэтиленовых мешках по 35 кг — стандартная упаковка, всегда в наличии на складе. Идеально подходит для ямочного ремонта дорог, тротуаров и парковок.</p><p>Состав может уплотняться даже при -27°С, сохраняя подвижность и качество материала.</p>", priceTiers: [{ minQtyKg: 0, price: 680, label: "до 1000 кг" }, { minQtyKg: 1000, price: 640, label: "от 1000 кг" }, { minQtyKg: 5000, price: 610, label: "от 5000 кг" }] },
+      { Title: "Холодный асфальт 35 кг (от 1000 кг)", Slug: "cold-asphalt-35kg-from-1000", Short_Description: "Цена при оплате более 1000 кг. Стандартная фасовка в полиэтиленовых мешках.", Price_Rub: 640, Unit_of_Measure: "мешок", Weight: "35 кг", isFeatured: true, isCustomOrder: false, category: catCold.documentId, Full_Description: "<p>Холодный асфальт Perma Patch в мешках по 35 кг. Оптовая цена при заказе от 1000 кг. Стандартная упаковка, всегда в наличии.</p>" },
+      { Title: "Холодный асфальт 35 кг (от 5000 кг)", Slug: "cold-asphalt-35kg-from-5000", Short_Description: "Оптовая партия от 5000 кг. Максимально выгодная цена.", Price_Rub: 610, Unit_of_Measure: "мешок", Weight: "35 кг", isFeatured: true, isCustomOrder: false, category: catCold.documentId, Full_Description: "<p>Холодный асфальт Perma Patch — лучшая цена при крупном опте от 5000 кг. Упаковка 35 кг, всегда в наличии.</p>" },
+      { Title: "Холодный асфальт 50 кг (полипропилен)", Slug: "cold-asphalt-50kg", Short_Description: "Под спецзаказ при определённой партии. Полипропиленовые мешки.", Price_Rub: 760, Unit_of_Measure: "мешок", Weight: "50 кг", isFeatured: false, isCustomOrder: true, category: catCold.documentId, Full_Description: "<p>Холодный асфальт в полипропиленовых мешках по 50 кг. Производится под спецзаказ при определённой партии. Уточняйте актуальную цену у менеджера.</p>" },
+      { Title: "Холодный асфальт 30 кг (полипропилен)", Slug: "cold-asphalt-30kg", Short_Description: "Под спецзаказ при определённой партии. Минимальная партия — 1 тонна.", Price_Rub: 470, Unit_of_Measure: "мешок", Weight: "30 кг", isFeatured: false, isCustomOrder: true, category: catCold.documentId, Full_Description: "<p>Холодный асфальт Perma Patch в мешках по 30 кг. Фасовка в полипропилен под заказ. Минимальная партия — 1 тонна.</p>" },
+      { Title: "Холодный асфальт 1000 кг (биг-бег)", Slug: "cold-asphalt-1000kg", Short_Description: "Холодный асфальт Perma Patch в биг-бегах по 1000 кг.", Price_Rub: 17910, Unit_of_Measure: "тонна", Weight: "1000 кг", isFeatured: false, isCustomOrder: true, category: catCold.documentId, Full_Description: "<p>Холодный асфальт Perma Patch фасовка в биг-бегах по 1000 кг. Экономичный вариант для крупных объёмов работ.</p>" },
+      { Title: "Красный холодный асфальт Perma Patch COLOR (мешки)", Slug: "red-cold-asphalt-bags", Short_Description: "Цветной холодный асфальт для выделения дорожных зон и покрытий.", Price_Rub: 1565, Unit_of_Measure: "мешок", Weight: "35 кг", isFeatured: false, isCustomOrder: true, category: catCold.documentId, Full_Description: "<p>Красный холодный асфальт Perma Patch COLOR — декоративное покрытие для выделения пешеходных зон, велодорожек и специальных площадок. Уточняйте актуальную цену.</p>" },
+      { Title: "Вяжущее для холодного асфальта 205 л (185 кг)", Slug: "binder-perma-patch-205l", Short_Description: "Вяжущее для производства холодного асфальта Perma Patch.", Price_Rub: 34385, Unit_of_Measure: "бочка", Weight: "185 кг", isFeatured: false, isCustomOrder: true, category: catCold.documentId, Full_Description: "<p>Вяжущее (концентрат) для производства холодного асфальта по канадской технологии Perma Patch. Объём 205 литров (185 кг).</p>" },
+      { Title: "Мешки полиэтиленовые для холодного асфальта", Slug: "pe-bags-cold-asphalt", Short_Description: "Мешки полиэтиленовые с заваренным дном, для пакетирования холодного асфальта по 25 или 30 кг.", Price_Rub: 95, Unit_of_Measure: "шт.", Weight: "—", isFeatured: false, isCustomOrder: false, category: catBags.documentId, Full_Description: "<p>Мешки полиэтиленовые с заваренным дном, без боковых складок, для пакетирования холодного асфальта по 25 или 30 кг.</p>" },
     ];
 
     for (const p of productsData) {
-      await strapi.entityService.create("api::product.product", {
-        data: { ...p, publishedAt: new Date() },
+      await strapi.documents("api::product.product").create({
+        data: p,
+        status: "published",
       });
     }
 
     // --- Page About ---
-    await strapi.entityService.create("api::page-about.page-about", {
+    await strapi.documents("api::page-about.page-about").create({
       data: {
         Intro_Text: "Компания «Новые Технологии Асфальта – NovTecAs» – это молодое и динамично развивающееся предприятие.",
         Full_Text: `<p>Наша основная цель – ознакомить потребителей с продукцией McAsphalt Industries Limited (Канада). Материалы этого производителя используются для изготовления теплого и холодного асфальта. Также доступны гидроизоляционные мастики для ремонта дорожных полотен.</p>
@@ -153,32 +156,32 @@ export default {
           { label: "Кор/счёт", value: "30101810700000000803" },
           { label: "БИК", value: "042202803" },
         ],
-        publishedAt: new Date(),
       },
+      status: "published",
     });
 
     // --- Page Production ---
-    await strapi.entityService.create("api::page-production.page-production", {
+    await strapi.documents("api::page-production.page-production").create({
       data: {
         Intro_Text: "Производство холодного асфальта осуществляется на собственных мощностях с использованием канадской технологии Perma Patch. Современное оборудование обеспечивает точную дозацию компонентов и стабильное качество продукции.",
-        publishedAt: new Date(),
       },
+      status: "published",
     });
 
     // --- Page Blacklist ---
-    await strapi.entityService.create("api::page-blacklist.page-blacklist", {
+    await strapi.documents("api::page-blacklist.page-blacklist").create({
       data: {
         Text_Content: `<p>Предлагаем Вашему вниманию список компаний и людей, с которыми наша организация имеет негативный опыт сотрудничества и работа с которыми может быть опасна для Вас и Вашей компании:</p>
 <ol>
 <li><strong>ООО «Ямалгазпрогресс»</strong> (ИНН 7841407982) — между компаниями ООО «Ямалгазпрогресс» и ООО «Новые технологии асфальта» был заключён договор и соглашение о поставке дизельного топлива на 230 230,00 рублей от поставщика ООО «Ямалгазпрогресс». Прошло уже несколько месяцев, а договорные обязательства не были исполнены поставщиком. В ответ на нашу претензию компания направила ответное письмо, что денежные средства будут возвращены в течение 14 рабочих дней. На данный момент обязательства по договору не были исполнены. Возврата уплаченных средств также не поступило.</li>
 <li><strong>ООО «ТЕХНОРЭД»</strong> (ИНН 5036173648) — поставка некачественного оборудования.</li>
 </ol>`,
-        publishedAt: new Date(),
       },
+      status: "published",
     });
 
     // --- Page Contacts ---
-    await strapi.entityService.create("api::page-contacts.page-contacts", {
+    await strapi.documents("api::page-contacts.page-contacts").create({
       data: {
         Contact_Info: `<p><strong>Адрес:</strong> 119180, Российская Федерация, г. Москва, ул. Большая Полянка, д. 51А/9, этаж 8, помещение 1</p>
 <p><strong>Склад:</strong> Московская обл., Домодедово, ул. Заборье, 2д, стр. 10</p>
@@ -186,16 +189,16 @@ export default {
 <p>Отдел продаж — доп. номер (100)</p>
 <p>Финансовый отдел — доп. номер (101)</p>
 <p>Техническая поддержка — доп. номер (102)</p>`,
-        publishedAt: new Date(),
       },
+      status: "published",
     });
 
     // --- Page Dealers ---
-    await strapi.entityService.create("api::page-dealers.page-dealers", {
+    await strapi.documents("api::page-dealers.page-dealers").create({
       data: {
         Intro_Text: "Ищем представителей и дилеров по всей России. Для информации звоните по телефону 8 800 707-04-71, добавочный номер (102).",
-        publishedAt: new Date(),
       },
+      status: "published",
     });
 
     // --- Dealers ---
@@ -226,8 +229,9 @@ export default {
     ];
 
     for (const d of dealersData) {
-      await strapi.entityService.create("api::dealer.dealer", {
-        data: { ...d, isActive: true, publishedAt: new Date() },
+      await strapi.documents("api::dealer.dealer").create({
+        data: { ...d, isActive: true },
+        status: "published",
       });
     }
 
@@ -243,8 +247,9 @@ export default {
     ];
 
     for (const p of portfolioData) {
-      await strapi.entityService.create("api::portfolio-item.portfolio-item", {
-        data: { ...p, publishedAt: new Date() },
+      await strapi.documents("api::portfolio-item.portfolio-item").create({
+        data: p,
+        status: "published",
       });
     }
 
@@ -256,13 +261,14 @@ export default {
     ];
 
     for (const a of articlesData) {
-      await strapi.entityService.create("api::media-item.media-item", {
-        data: { ...a, publishedAt: new Date() },
+      await strapi.documents("api::media-item.media-item").create({
+        data: a,
+        status: "published",
       });
     }
 
     // --- Page (Privacy) ---
-    await strapi.entityService.create("api::page.page", {
+    await strapi.documents("api::page.page").create({
       data: {
         title: "Политика в отношении обработки персональных данных",
         slug: "privacy",
@@ -290,12 +296,12 @@ export default {
 <h2>6. Права субъектов персональных данных</h2>
 <p>6.1. Субъект персональных данных имеет право: на получение персональных данных, относящихся к данному субъекту; на уточнение, блокирование или уничтожение его персональных данных; на отзыв данного им согласия на обработку персональных данных; на защиту своих прав и законных интересов.</p>
 <p>6.2. Для реализации своих прав и законных интересов субъекты персональных данных имеют право обратиться к Оператору либо направить запрос лично или с помощью представителя.</p>`,
-        publishedAt: new Date(),
       },
+      status: "published",
     });
 
     // --- Site Settings ---
-    await strapi.entityService.create("api::site-setting.site-setting", {
+    await strapi.documents("api::site-setting.site-setting").create({
       data: {
         copyright: "Новтекас. Все права защищены.",
         contacts: {

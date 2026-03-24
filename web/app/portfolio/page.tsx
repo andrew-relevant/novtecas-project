@@ -3,23 +3,20 @@ import Image from "next/image";
 import { Breadcrumbs } from "@/components/breadcrumbs";
 import { Card, CardContent } from "@/components/ui/card";
 import { fetchStrapi, getStrapiMedia } from "@/lib/strapi";
-import type {
-  StrapiResponse,
-  StrapiEntry,
-  PortfolioItemAttributes,
-} from "@/lib/types";
+import type { StrapiResponse, PortfolioItem } from "@/lib/types";
 
 export default async function PortfolioPage() {
-  const { data: items } = await fetchStrapi<
-    StrapiResponse<StrapiEntry<PortfolioItemAttributes>[]>
-  >("/portfolio-items", {
-    params: {
-      "populate": "*",
-      "sort[0]": "Date:desc",
-      "pagination[pageSize]": "100",
+  const { data: items } = await fetchStrapi<StrapiResponse<PortfolioItem[]>>(
+    "/portfolio-items",
+    {
+      params: {
+        "populate": "*",
+        "sort[0]": "Date:desc",
+        "pagination[pageSize]": "100",
+      },
+      fallback: { data: [], meta: {} },
     },
-    fallback: { data: [], meta: {} },
-  });
+  );
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -32,11 +29,8 @@ export default async function PortfolioPage() {
       {items.length > 0 ? (
         <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {items.map((item) => {
-            const { Title, Slug, Date: date, Short_Text, Image_Preview } =
-              item.attributes;
-            const imageUrl = getStrapiMedia(
-              Image_Preview?.data?.attributes?.url ?? null,
-            );
+            const { Title, Slug, Date: date, Short_Text, Image_Preview } = item;
+            const imageUrl = getStrapiMedia(Image_Preview?.url ?? null);
 
             return (
               <Link key={item.id} href={`/portfolio/${Slug}`}>

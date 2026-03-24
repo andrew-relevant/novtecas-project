@@ -3,7 +3,7 @@ import { z } from "zod";
 import { reviewFormSchema } from "@/lib/validations";
 
 const reviewRequestSchema = reviewFormSchema.extend({
-  productId: z.coerce.number().int().positive(),
+  productId: z.string().min(1),
 });
 
 function isHoneypotTripped(body: unknown): boolean {

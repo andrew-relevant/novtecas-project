@@ -8,17 +8,13 @@ import { ModalForm } from "@/components/modal-form";
 import { BuyForm } from "@/components/forms/buy-form";
 import { ReviewForm } from "@/components/forms/review-form";
 import { Star } from "lucide-react";
-import type {
-  StrapiEntry,
-  ProductAttributes,
-  ReviewAttributes,
-} from "@/lib/types";
+import type { Product, Review } from "@/lib/types";
 
 interface ProductDetailClientProps {
-  productId: number;
+  productId: string;
   productTitle: string;
-  reviews: StrapiEntry<ReviewAttributes>[];
-  relatedProducts: StrapiEntry<ProductAttributes>[];
+  reviews: Review[];
+  relatedProducts: Product[];
 }
 
 export function ProductDetailClient({
@@ -82,14 +78,14 @@ export function ProductDetailClient({
                 className="rounded-lg border p-4"
               >
                 <div className="flex items-center justify-between">
-                  <p className="font-medium">{review.attributes.author}</p>
-                  {review.attributes.rating && (
+                  <p className="font-medium">{review.author}</p>
+                  {review.rating && (
                     <div className="flex gap-0.5">
                       {Array.from({ length: 5 }).map((_, i) => (
                         <Star
                           key={i}
                           className={`h-4 w-4 ${
-                            i < (review.attributes.rating ?? 0)
+                            i < (review.rating ?? 0)
                               ? "fill-yellow-400 text-yellow-400"
                               : "text-muted-foreground"
                           }`}
@@ -99,10 +95,10 @@ export function ProductDetailClient({
                   )}
                 </div>
                 <p className="mt-2 text-sm text-muted-foreground">
-                  {review.attributes.text}
+                  {review.text}
                 </p>
                 <p className="mt-1 text-xs text-muted-foreground">
-                  {new Date(review.attributes.createdAt).toLocaleDateString(
+                  {new Date(review.createdAt).toLocaleDateString(
                     "ru-RU",
                   )}
                 </p>

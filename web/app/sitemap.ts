@@ -1,6 +1,11 @@
 import type { MetadataRoute } from "next";
 import { fetchStrapi } from "@/lib/strapi";
-import type { StrapiResponse, StrapiEntry, ProductAttributes, PortfolioItemAttributes, MediaItemAttributes } from "@/lib/types";
+import type {
+  StrapiResponse,
+  Product,
+  PortfolioItem,
+  MediaItem,
+} from "@/lib/types";
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://novtecas.ru";
 
@@ -24,17 +29,17 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   try {
     const [products, portfolio, media] = await Promise.all([
-      fetchStrapi<StrapiResponse<StrapiEntry<ProductAttributes>[]>>("/products", {
+      fetchStrapi<StrapiResponse<Product[]>>("/products", {
         "fields[0]": "Slug",
         "fields[1]": "updatedAt",
         "pagination[pageSize]": "200",
       }),
-      fetchStrapi<StrapiResponse<StrapiEntry<PortfolioItemAttributes>[]>>("/portfolio-items", {
+      fetchStrapi<StrapiResponse<PortfolioItem[]>>("/portfolio-items", {
         "fields[0]": "Slug",
         "fields[1]": "updatedAt",
         "pagination[pageSize]": "200",
       }),
-      fetchStrapi<StrapiResponse<StrapiEntry<MediaItemAttributes>[]>>("/media-items", {
+      fetchStrapi<StrapiResponse<MediaItem[]>>("/media-items", {
         "fields[0]": "Slug",
         "fields[1]": "updatedAt",
         "pagination[pageSize]": "200",
@@ -43,20 +48,20 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
     dynamicPages = [
       ...products.data.map((p) => ({
-        url: `${SITE_URL}/products/${p.attributes.Slug}`,
-        lastModified: new Date(p.attributes.updatedAt ?? Date.now()),
+        url: `${SITE_URL}/products/${p.Slug}`,
+        lastModified: new Date(p.updatedAt ?? Date.now()),
         changeFrequency: "weekly" as const,
         priority: 0.8,
       })),
       ...portfolio.data.map((p) => ({
-        url: `${SITE_URL}/portfolio/${p.attributes.Slug}`,
-        lastModified: new Date(p.attributes.publishedAt ?? Date.now()),
+        url: `${SITE_URL}/portfolio/${p.Slug}`,
+        lastModified: new Date(p.publishedAt ?? Date.now()),
         changeFrequency: "monthly" as const,
         priority: 0.6,
       })),
       ...media.data.map((m) => ({
-        url: `${SITE_URL}/media/${m.attributes.Slug}`,
-        lastModified: new Date(m.attributes.publishedAt ?? Date.now()),
+        url: `${SITE_URL}/media/${m.Slug}`,
+        lastModified: new Date(m.publishedAt ?? Date.now()),
         changeFrequency: "monthly" as const,
         priority: 0.6,
       })),

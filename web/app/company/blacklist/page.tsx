@@ -1,10 +1,6 @@
 import { Metadata } from "next";
 import { fetchStrapi } from "@/lib/strapi";
-import {
-  StrapiResponse,
-  StrapiEntry,
-  PageBlacklistAttributes,
-} from "@/lib/types";
+import { StrapiResponse, PageBlacklist } from "@/lib/types";
 import { Breadcrumbs } from "@/components/breadcrumbs";
 import { RichText } from "@/components/rich-text";
 
@@ -14,16 +10,17 @@ export const metadata: Metadata = {
 };
 
 export default async function BlacklistPage() {
-  const fallback: StrapiResponse<StrapiEntry<PageBlacklistAttributes>> = {
-    data: { id: 0, attributes: { Text_Content: null } },
+  const fallback: StrapiResponse<PageBlacklist> = {
+    data: { id: 0, documentId: "", Text_Content: null },
     meta: {},
   };
 
-  const { data } = await fetchStrapi<
-    StrapiResponse<StrapiEntry<PageBlacklistAttributes>>
-  >("/page-blacklist", { params: { "populate": "*" }, fallback });
+  const { data } = await fetchStrapi<StrapiResponse<PageBlacklist>>(
+    "/page-blacklist",
+    { params: { "populate": "*" }, fallback },
+  );
 
-  const attrs = data.attributes;
+  const attrs = data;
 
   return (
     <>

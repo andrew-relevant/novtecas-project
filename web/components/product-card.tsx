@@ -4,17 +4,17 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { getStrapiMedia } from "@/lib/strapi";
-import type { StrapiEntry, ProductAttributes } from "@/lib/types";
+import type { Product } from "@/lib/types";
 
 interface ProductCardProps {
-  product: StrapiEntry<ProductAttributes>;
+  product: Product;
   onBuyClick?: (productTitle: string) => void;
 }
 
 export function ProductCard({ product, onBuyClick }: ProductCardProps) {
   const { Title, Slug, Short_Description, Price_Rub, Unit_of_Measure, Image: img, isCustomOrder } =
-    product.attributes;
-  const imageUrl = getStrapiMedia(img?.data?.attributes?.url ?? null);
+    product;
+  const imageUrl = getStrapiMedia(img?.url ?? null);
 
   return (
     <Card className="group overflow-hidden transition-shadow hover:shadow-lg">

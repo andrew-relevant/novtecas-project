@@ -1,10 +1,6 @@
 import { Metadata } from "next";
 import { fetchStrapi } from "@/lib/strapi";
-import {
-  StrapiResponse,
-  StrapiEntry,
-  MediaItemAttributes,
-} from "@/lib/types";
+import { StrapiResponse, MediaItem } from "@/lib/types";
 import { Breadcrumbs } from "@/components/breadcrumbs";
 import { MediaListClient } from "./media-list-client";
 
@@ -14,26 +10,27 @@ export const metadata: Metadata = {
 };
 
 export default async function MediaPage() {
-  const { data } = await fetchStrapi<
-    StrapiResponse<StrapiEntry<MediaItemAttributes>[]>
-  >("/media-items", {
-    params: {
-      "populate": "*",
-      "sort": "Date:desc",
-      "pagination[pageSize]": "100",
+  const { data } = await fetchStrapi<StrapiResponse<MediaItem[]>>(
+    "/media-items",
+    {
+      params: {
+        "populate": "*",
+        "sort": "Date:desc",
+        "pagination[pageSize]": "100",
+      },
+      fallback: { data: [], meta: {} },
     },
-    fallback: { data: [], meta: {} },
-  });
+  );
 
   const items = data.map((entry) => ({
     id: entry.id,
-    title: entry.attributes.Title,
-    slug: entry.attributes.Slug,
-    date: entry.attributes.Date,
-    type: entry.attributes.Type,
-    excerpt: entry.attributes.Short_Text,
-    imageUrl: entry.attributes.Image_Preview?.data?.attributes.url ?? null,
-    imageAlt: entry.attributes.Image_Preview?.data?.attributes.alternativeText ?? entry.attributes.Title,
+    title: entry.Title,
+    slug: entry.Slug,
+    date: entry.Date,
+    type: entry.Type,
+    excerpt: entry.Short_Text,
+    imageUrl: entry.Image_Preview?.url ?? null,
+    imageAlt: entry.Image_Preview?.alternativeText ?? entry.Title,
   }));
 
   return (

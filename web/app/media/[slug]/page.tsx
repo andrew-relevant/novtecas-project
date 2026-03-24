@@ -2,11 +2,7 @@ import { Metadata } from "next";
 import Image from "next/image";
 import { notFound } from "next/navigation";
 import { fetchStrapi, getStrapiMedia } from "@/lib/strapi";
-import {
-  StrapiResponse,
-  StrapiEntry,
-  MediaItemAttributes,
-} from "@/lib/types";
+import { StrapiResponse, MediaItem } from "@/lib/types";
 import { Breadcrumbs } from "@/components/breadcrumbs";
 import { RichText } from "@/components/rich-text";
 import { Gallery } from "@/components/gallery";
@@ -23,15 +19,16 @@ interface MediaItemPageProps {
 }
 
 async function getMediaItem(slug: string) {
-  const { data } = await fetchStrapi<
-    StrapiResponse<StrapiEntry<MediaItemAttributes>[]>
-  >("/media-items", {
-    params: {
-      "filters[Slug][$eq]": slug,
-      "populate": "*",
+  const { data } = await fetchStrapi<StrapiResponse<MediaItem[]>>(
+    "/media-items",
+    {
+      params: {
+        "filters[Slug][$eq]": slug,
+        "populate": "*",
+      },
+      fallback: { data: [], meta: {} },
     },
-    fallback: { data: [], meta: {} },
-  });
+  );
 
   return data[0] ?? null;
 }
@@ -44,8 +41,8 @@ export async function generateMetadata({
   if (!item) return { title: "Не найдено" };
 
   return {
-    title: item.attributes.Title,
-    description: item.attributes.Short_Text || undefined,
+    title: item.Title,
+    description: item.Short_Text || undefined,
   };
 }
 
@@ -54,17 +51,17 @@ export default async function MediaItemPage({ params }: MediaItemPageProps) {
   const item = await getMediaItem(slug);
   if (!item) notFound();
 
-  const attrs = item.attributes;
+  const attrs = item;
 
-  const coverUrl = attrs.Image_Preview?.data
-    ? getStrapiMedia(attrs.Image_Preview.data.attributes.url)
+  const coverUrl = attrs.Image_Preview
+    ? getStrapiMedia(attrs.Image_Preview.url)
     : null;
 
-  const galleryItems = (attrs.Gallery?.data ?? []).map((img) => ({
-    url: img.attributes.url,
-    alt: img.attributes.alternativeText || attrs.Title,
-    width: img.attributes.width,
-    height: img.attributes.height,
+  const galleryItems = (attrs.Gallery ?? []).map((img) => ({
+    url: img.url,
+    alt: img.alternativeText || attrs.Title,
+    width: img.width,
+    height: img.height,
   }));
 
   const formattedDate = attrs.Date

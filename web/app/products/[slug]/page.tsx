@@ -6,11 +6,7 @@ import { Gallery } from "@/components/gallery";
 import { RichText } from "@/components/rich-text";
 import { Badge } from "@/components/ui/badge";
 import { fetchStrapi, getStrapiMedia } from "@/lib/strapi";
-import type {
-  StrapiResponse,
-  StrapiEntry,
-  ProductAttributes,
-} from "@/lib/types";
+import type { StrapiResponse, Product } from "@/lib/types";
 import { ProductDetailClient } from "./product-detail-client";
 
 interface ProductPageProps {
@@ -18,7 +14,7 @@ interface ProductPageProps {
 }
 
 async function getProduct(slug: string) {
-  const res = await fetchStrapi<StrapiResponse<StrapiEntry<ProductAttributes>[]>>(
+  const res = await fetchStrapi<StrapiResponse<Product[]>>(
     "/products",
     {
       params: {
@@ -44,11 +40,9 @@ export async function generateMetadata({
   const product = await getProduct(slug);
   if (!product) return { title: "Товар не найден" };
 
-  const { Title, Short_Description, seo, Image: img } = product.attributes;
+  const { Title, Short_Description, seo, Image: img } = product;
   const ogImage = getStrapiMedia(
-    seo?.ogImage?.data?.attributes?.url ??
-      img?.data?.attributes?.url ??
-      null,
+    seo?.ogImage?.url ?? img?.url ?? null,
   );
 
   return {
@@ -81,20 +75,18 @@ export default async function ProductPage({ params }: ProductPageProps) {
     priceTiers,
     Related_Products,
     reviews,
-  } = product.attributes;
+  } = product;
 
-  const mainImageUrl = getStrapiMedia(mainImage?.data?.attributes?.url ?? null);
+  const mainImageUrl = getStrapiMedia(mainImage?.url ?? null);
 
-  const galleryItems = (gallery?.data ?? []).map((item) => ({
-    url: item.attributes.url,
-    alt: item.attributes.alternativeText ?? Title,
-    width: item.attributes.width,
-    height: item.attributes.height,
+  const galleryItems = (gallery ?? []).map((item) => ({
+    url: item.url,
+    alt: item.alternativeText ?? Title,
+    width: item.width,
+    height: item.height,
   }));
 
-  const publishedReviews = (reviews?.data ?? []).filter(
-    (r) => r.attributes.isPublished,
-  );
+  const publishedReviews = (reviews ?? []).filter((r) => r.isPublished);
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -203,10 +195,10 @@ export default async function ProductPage({ params }: ProductPageProps) {
 
       {/* Client-side interactive parts */}
       <ProductDetailClient
-        productId={product.id}
+        productId={product.documentId}
         productTitle={Title}
         reviews={publishedReviews}
-        relatedProducts={Related_Products?.data ?? []}
+        relatedProducts={Related_Products ?? []}
       />
     </div>
   );

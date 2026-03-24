@@ -12,39 +12,16 @@ export interface StrapiMeta {
   };
 }
 
-export interface StrapiEntry<T> {
+export interface StrapiMediaItem {
   id: number;
-  attributes: T;
-}
-
-export interface StrapiMedia {
-  data: {
-    id: number;
-    attributes: {
-      url: string;
-      alternativeText: string | null;
-      width: number;
-      height: number;
-      formats: Record<string, { url: string; width: number; height: number }>;
-      mime: string;
-      name: string;
-    };
-  } | null;
-}
-
-export interface StrapiMediaMultiple {
-  data: Array<{
-    id: number;
-    attributes: {
-      url: string;
-      alternativeText: string | null;
-      width: number;
-      height: number;
-      formats: Record<string, { url: string; width: number; height: number }>;
-      mime: string;
-      name: string;
-    };
-  }>;
+  documentId: string;
+  url: string;
+  alternativeText: string | null;
+  width: number;
+  height: number;
+  formats: Record<string, { url: string; width: number; height: number }> | null;
+  mime: string;
+  name: string;
 }
 
 // --- Components ---
@@ -68,42 +45,48 @@ export interface SEOComponent {
   id: number;
   metaTitle: string | null;
   metaDescription: string | null;
-  ogImage: StrapiMedia;
+  ogImage: StrapiMediaItem | null;
 }
 
-// --- Content Types ---
+// --- Content Types (Strapi 5: flat, no data.attributes wrapper) ---
 
-export interface ProductAttributes {
+export interface Product {
+  id: number;
+  documentId: string;
   Title: string;
   Slug: string;
   Short_Description: string | null;
   Price_Rub: number | null;
   Unit_of_Measure: string | null;
   Weight: string | null;
-  Image: StrapiMedia;
-  Gallery: StrapiMediaMultiple;
+  Image: StrapiMediaItem | null;
+  Gallery: StrapiMediaItem[];
   Full_Description: string | null;
   Specs: Record<string, string> | null;
   isFeatured: boolean;
   isCustomOrder: boolean;
   priceTiers: PriceTier[];
-  category: { data: StrapiEntry<ProductCategoryAttributes> | null };
-  Related_Products: { data: StrapiEntry<ProductAttributes>[] };
-  reviews: { data: StrapiEntry<ReviewAttributes>[] };
+  category: ProductCategory | null;
+  Related_Products: Product[];
+  reviews: Review[];
   seo: SEOComponent | null;
   createdAt: string;
   updatedAt: string;
   publishedAt: string;
 }
 
-export interface ProductCategoryAttributes {
+export interface ProductCategory {
+  id: number;
+  documentId: string;
   name: string;
   slug: string;
   description: string | null;
-  products: { data: StrapiEntry<ProductAttributes>[] };
+  products: Product[];
 }
 
-export interface DealerAttributes {
+export interface Dealer {
+  id: number;
+  documentId: string;
   Title: string;
   City: string | null;
   Address: string | null;
@@ -114,67 +97,81 @@ export interface DealerAttributes {
   publishedAt: string;
 }
 
-export interface DocumentAttributes {
+export interface DocumentEntry {
+  id: number;
+  documentId: string;
   Title: string;
-  File: StrapiMedia;
+  File: StrapiMediaItem | null;
   Category: string | null;
-  Preview_Image: StrapiMedia;
+  Preview_Image: StrapiMediaItem | null;
   sortOrder: number;
   publishedAt: string;
 }
 
-export interface PortfolioItemAttributes {
+export interface PortfolioItem {
+  id: number;
+  documentId: string;
   Title: string;
   Slug: string;
   Date: string | null;
   Short_Text: string | null;
   Full_Text: string | null;
-  Image_Preview: StrapiMedia;
-  Gallery: StrapiMediaMultiple;
+  Image_Preview: StrapiMediaItem | null;
+  Gallery: StrapiMediaItem[];
   publishedAt: string;
 }
 
-export interface MediaItemAttributes {
+export interface MediaItem {
+  id: number;
+  documentId: string;
   Title: string;
   Slug: string;
   Date: string | null;
   Type: "news" | "article" | "video";
   Short_Text: string | null;
   Full_Text: string | null;
-  Image_Preview: StrapiMedia;
-  Gallery: StrapiMediaMultiple;
+  Image_Preview: StrapiMediaItem | null;
+  Gallery: StrapiMediaItem[];
   publishedAt: string;
 }
 
-export interface ReviewAttributes {
+export interface Review {
+  id: number;
+  documentId: string;
   author: string;
   text: string;
   rating: number | null;
-  product: { data: StrapiEntry<ProductAttributes> | null };
+  product: Product | null;
   isPublished: boolean;
   createdAt: string;
 }
 
-export interface LeadAttributes {
+export interface Lead {
+  id: number;
+  documentId: string;
   type: "buy" | "dealer" | "contact" | "callback";
   name: string;
   phone: string;
   email: string | null;
   company: string | null;
   message: string | null;
-  product: { data: StrapiEntry<ProductAttributes> | null };
+  product: Product | null;
   createdAt: string;
 }
 
-export interface PartnerAttributes {
+export interface Partner {
+  id: number;
+  documentId: string;
   name: string;
-  logo: StrapiMedia;
+  logo: StrapiMediaItem | null;
   url: string | null;
   sortOrder: number;
   isActive: boolean;
 }
 
-export interface PageAttributes {
+export interface Page {
+  id: number;
+  documentId: string;
   title: string;
   slug: string;
   content: string | null;
@@ -182,34 +179,46 @@ export interface PageAttributes {
   publishedAt: string;
 }
 
-export interface PageAboutAttributes {
+export interface PageAbout {
+  id: number;
+  documentId: string;
   Intro_Text: string | null;
   Full_Text: string | null;
-  Sidebar_Image: StrapiMedia;
+  Sidebar_Image: StrapiMediaItem | null;
   Requisites_Table: Record<string, string>[] | null;
 }
 
-export interface PageProductionAttributes {
+export interface PageProduction {
+  id: number;
+  documentId: string;
   Intro_Text: string | null;
-  Gallery: StrapiMediaMultiple;
+  Gallery: StrapiMediaItem[];
 }
 
-export interface PageBlacklistAttributes {
+export interface PageBlacklist {
+  id: number;
+  documentId: string;
   Text_Content: string | null;
 }
 
-export interface PageContactsAttributes {
+export interface PageContacts {
+  id: number;
+  documentId: string;
   Contact_Info: string | null;
 }
 
-export interface PageDealersAttributes {
+export interface PageDealers {
+  id: number;
+  documentId: string;
   Intro_Text: string | null;
 }
 
-export interface SiteSettingsAttributes {
-  logo: StrapiMedia;
+export interface SiteSettings {
+  id: number;
+  documentId: string;
+  logo: StrapiMediaItem | null;
   contacts: ContactInfo | null;
   copyright: string | null;
-  heroVideo: StrapiMedia;
-  heroPoster: StrapiMedia;
+  heroVideo: StrapiMediaItem | null;
+  heroPoster: StrapiMediaItem | null;
 }

@@ -1,10 +1,6 @@
 import { Metadata } from "next";
 import { fetchStrapi, getStrapiMedia } from "@/lib/strapi";
-import {
-  StrapiResponse,
-  StrapiEntry,
-  PageAboutAttributes,
-} from "@/lib/types";
+import { StrapiResponse, PageAbout } from "@/lib/types";
 import { Breadcrumbs } from "@/components/breadcrumbs";
 import { RichText } from "@/components/rich-text";
 import Image from "next/image";
@@ -16,26 +12,26 @@ export const metadata: Metadata = {
 };
 
 export default async function AboutPage() {
-  const fallback: StrapiResponse<StrapiEntry<PageAboutAttributes>> = {
+  const fallback: StrapiResponse<PageAbout> = {
     data: {
       id: 0,
-      attributes: {
-        Intro_Text: null,
-        Full_Text: null,
-        Sidebar_Image: { data: null },
-        Requisites_Table: null,
-      },
+      documentId: "",
+      Intro_Text: null,
+      Full_Text: null,
+      Sidebar_Image: null,
+      Requisites_Table: null,
     },
     meta: {},
   };
 
-  const { data } = await fetchStrapi<
-    StrapiResponse<StrapiEntry<PageAboutAttributes>>
-  >("/page-about", { params: { "populate": "*" }, fallback });
+  const { data } = await fetchStrapi<StrapiResponse<PageAbout>>(
+    "/page-about",
+    { params: { "populate": "*" }, fallback },
+  );
 
-  const attrs = data.attributes;
-  const sidebarSrc = attrs.Sidebar_Image?.data
-    ? getStrapiMedia(attrs.Sidebar_Image.data.attributes.url)
+  const attrs = data;
+  const sidebarSrc = attrs.Sidebar_Image
+    ? getStrapiMedia(attrs.Sidebar_Image.url)
     : null;
 
   const requisitesText = attrs.Requisites_Table

@@ -1,11 +1,7 @@
 import { Metadata } from "next";
 import Image from "next/image";
 import { fetchStrapi, getStrapiMedia } from "@/lib/strapi";
-import {
-  StrapiResponse,
-  StrapiEntry,
-  DocumentAttributes,
-} from "@/lib/types";
+import { StrapiResponse, DocumentEntry } from "@/lib/types";
 import { Breadcrumbs } from "@/components/breadcrumbs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -17,17 +13,18 @@ export const metadata: Metadata = {
 };
 
 export default async function DocumentsPage() {
-  const { data } = await fetchStrapi<
-    StrapiResponse<StrapiEntry<DocumentAttributes>[]>
-  >("/documents", {
-    params: { "populate": "*" },
-    fallback: { data: [], meta: {} },
-  });
+  const { data } = await fetchStrapi<StrapiResponse<DocumentEntry[]>>(
+    "/documents",
+    {
+      params: { "populate": "*" },
+      fallback: { data: [], meta: {} },
+    },
+  );
 
-  const grouped = new Map<string, StrapiEntry<DocumentAttributes>[]>();
+  const grouped = new Map<string, DocumentEntry[]>();
 
   for (const doc of data) {
-    const category = doc.attributes.Category || "Прочее";
+    const category = doc.Category || "Прочее";
     const existing = grouped.get(category) ?? [];
     existing.push(doc);
     grouped.set(category, existing);
@@ -47,11 +44,11 @@ export default async function DocumentsPage() {
 
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {docs.map((doc) => {
-              const previewUrl = doc.attributes.Preview_Image?.data
-                ? getStrapiMedia(doc.attributes.Preview_Image.data.attributes.url)
+              const previewUrl = doc.Preview_Image
+                ? getStrapiMedia(doc.Preview_Image.url)
                 : null;
-              const fileUrl = doc.attributes.File?.data
-                ? getStrapiMedia(doc.attributes.File.data.attributes.url)
+              const fileUrl = doc.File
+                ? getStrapiMedia(doc.File.url)
                 : null;
 
               return (
@@ -60,7 +57,7 @@ export default async function DocumentsPage() {
                     <div className="relative aspect-[4/3] overflow-hidden rounded-t-lg">
                       <Image
                         src={previewUrl}
-                        alt={doc.attributes.Title}
+                        alt={doc.Title}
                         fill
                         className="object-cover"
                         sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
@@ -74,7 +71,7 @@ export default async function DocumentsPage() {
 
                   <CardHeader className="pb-2">
                     <CardTitle className="text-base">
-                      {doc.attributes.Title}
+                      {doc.Title}
                     </CardTitle>
                   </CardHeader>
 

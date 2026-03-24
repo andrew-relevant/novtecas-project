@@ -1,10 +1,6 @@
 import { Metadata } from "next";
 import { fetchStrapi } from "@/lib/strapi";
-import {
-  StrapiResponse,
-  StrapiEntry,
-  PageProductionAttributes,
-} from "@/lib/types";
+import { StrapiResponse, PageProduction } from "@/lib/types";
 import { Breadcrumbs } from "@/components/breadcrumbs";
 import { Gallery } from "@/components/gallery";
 
@@ -14,22 +10,23 @@ export const metadata: Metadata = {
 };
 
 export default async function ProductionPage() {
-  const fallback: StrapiResponse<StrapiEntry<PageProductionAttributes>> = {
-    data: { id: 0, attributes: { Intro_Text: null, Gallery: { data: [] } } },
+  const fallback: StrapiResponse<PageProduction> = {
+    data: { id: 0, documentId: "", Intro_Text: null, Gallery: [] },
     meta: {},
   };
 
-  const { data } = await fetchStrapi<
-    StrapiResponse<StrapiEntry<PageProductionAttributes>>
-  >("/page-production", { params: { "populate": "*" }, fallback });
+  const { data } = await fetchStrapi<StrapiResponse<PageProduction>>(
+    "/page-production",
+    { params: { "populate": "*" }, fallback },
+  );
 
-  const attrs = data.attributes;
+  const attrs = data;
 
-  const galleryItems = (attrs.Gallery?.data ?? []).map((img) => ({
-    url: img.attributes.url,
-    alt: img.attributes.alternativeText || "Производство",
-    width: img.attributes.width,
-    height: img.attributes.height,
+  const galleryItems = (attrs.Gallery ?? []).map((img) => ({
+    url: img.url,
+    alt: img.alternativeText || "Производство",
+    width: img.width,
+    height: img.height,
   }));
 
   return (

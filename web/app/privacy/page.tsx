@@ -1,10 +1,6 @@
 import { Metadata } from "next";
 import { fetchStrapi } from "@/lib/strapi";
-import {
-  StrapiResponse,
-  StrapiEntry,
-  PageAttributes,
-} from "@/lib/types";
+import { StrapiResponse, Page } from "@/lib/types";
 import { Breadcrumbs } from "@/components/breadcrumbs";
 import { RichText } from "@/components/rich-text";
 
@@ -35,15 +31,13 @@ export default async function PrivacyPage() {
   let content: string | null = null;
 
   try {
-    const { data } = await fetchStrapi<
-      StrapiResponse<StrapiEntry<PageAttributes>[]>
-    >("/pages", {
+    const { data } = await fetchStrapi<StrapiResponse<Page[]>>("/pages", {
       "filters[slug][$eq]": "privacy",
       "populate": "*",
     });
 
     if (data[0]) {
-      content = data[0].attributes.content;
+      content = data[0].content;
     }
   } catch {
     // CMS unavailable — use fallback
