@@ -85,6 +85,13 @@
       "type": "component",
       "repeatable": false,
       "component": "shared.seo"
+    },
+    "Show_Price_Note": {
+      "type": "boolean",
+      "default": false
+    },
+    "Price_Note": {
+      "type": "string"
     }
   }
 }

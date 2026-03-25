@@ -1,13 +1,13 @@
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
-import Image from "next/image";
 import { Breadcrumbs } from "@/components/breadcrumbs";
-import { Gallery } from "@/components/gallery";
+import { ProductCarousel } from "@/components/product-carousel";
 import { RichText } from "@/components/rich-text";
-import { Badge } from "@/components/ui/badge";
+
 import { fetchStrapi, getStrapiMedia } from "@/lib/strapi";
 import type { StrapiResponse, Product } from "@/lib/types";
 import { ProductDetailClient } from "./product-detail-client";
+import { BuyButton } from "@/components/buy-button";
 
 interface ProductPageProps {
   params: Promise<{ slug: string }>;
@@ -19,12 +19,13 @@ async function getProduct(slug: string) {
     {
       params: {
         "filters[Slug][$eq]": slug,
-        "populate[Image]": "*",
-        "populate[Gallery]": "*",
-        "populate[category]": "*",
-        "populate[Related_Products][populate]": "*",
-        "populate[reviews]": "*",
-        "populate[seo][populate]": "*",
+        "populate[Image]": "true",
+        "populate[Gallery]": "true",
+        "populate[category]": "true",
+        "populate[priceTiers]": "true",
+        "populate[Related_Products][populate][Image]": "true",
+        "populate[reviews]": "true",
+        "populate[seo][populate][ogImage]": "true",
       },
       fallback: { data: [], meta: {} },
     },
@@ -71,20 +72,41 @@ export default async function ProductPage({ params }: ProductPageProps) {
     Gallery: gallery,
     Full_Description,
     Specs,
-    isCustomOrder,
     priceTiers,
     Related_Products,
     reviews,
+    Show_Price_Note,
+    Price_Note,
   } = product;
 
-  const mainImageUrl = getStrapiMedia(mainImage?.url ?? null);
-
-  const galleryItems = (gallery ?? []).map((item) => ({
-    url: item.url,
-    alt: item.alternativeText ?? Title,
-    width: item.width,
-    height: item.height,
-  }));
+  const carouselImages = (() => {
+    if (gallery && gallery.length > 0) {
+      return gallery
+        .map((item) => {
+          const src = getStrapiMedia(item.url);
+          if (!src) return null;
+          return {
+            src,
+            alt: item.alternativeText ?? Title,
+            width: item.width,
+            height: item.height,
+          };
+        })
+        .filter((item): item is NonNullable<typeof item> => item !== null);
+    }
+    const fallbackSrc = getStrapiMedia(mainImage?.url ?? null);
+    if (fallbackSrc && mainImage) {
+      return [
+        {
+          src: fallbackSrc,
+          alt: Title,
+          width: mainImage.width,
+          height: mainImage.height,
+        },
+      ];
+    }
+    return [];
+  })();
 
   const publishedReviews = (reviews ?? []).filter((r) => r.isPublished);
 
@@ -95,51 +117,36 @@ export default async function ProductPage({ params }: ProductPageProps) {
       <div className="grid gap-8 lg:grid-cols-2">
         {/* Left: image + gallery */}
         <div>
-          {mainImageUrl && (
-            <div className="relative aspect-[4/3] overflow-hidden rounded-lg bg-muted">
-              <Image
-                src={mainImageUrl}
-                alt={Title}
-                fill
-                className="object-cover"
-                sizes="(max-width: 1024px) 100vw, 50vw"
-                priority
-              />
-            </div>
-          )}
-          {galleryItems.length > 0 && (
-            <div className="mt-4">
-              <Gallery items={galleryItems} />
-            </div>
-          )}
+          <ProductCarousel images={carouselImages} />
         </div>
 
         {/* Right: product info */}
         <div>
           <h1 className="text-3xl font-bold">{Title}</h1>
-          {isCustomOrder && (
-            <Badge variant="secondary" className="mt-2">
-              Под заказ
-            </Badge>
-          )}
           {Short_Description && (
             <p className="mt-3 text-muted-foreground">{Short_Description}</p>
           )}
 
           <div className="mt-6 space-y-2">
-            {Price_Rub != null && (
-              <p className="text-2xl font-bold">
-                {Price_Rub.toLocaleString("ru-RU")} ₽
-                {Unit_of_Measure && (
-                  <span className="text-base font-normal text-muted-foreground">
-                    /{Unit_of_Measure}
-                  </span>
-                )}
+            <div className="flex items-center gap-4">
+              {Price_Rub != null && (
+                <p className="text-2xl font-bold">
+                  {Price_Rub.toLocaleString("ru-RU")} ₽
+                  {Show_Price_Note && Price_Note && <sup>*</sup>}
+                  {Unit_of_Measure && (
+                    <span className="text-base font-normal text-muted-foreground">
+                      /{Unit_of_Measure}
+                    </span>
+                  )}
+                </p>
+              )}
+              <BuyButton productTitle={Title} />
+            </div>
+            {Show_Price_Note && Price_Note && (
+              <p className="mt-4 text-xs italic text-muted-foreground">
+                * {Price_Note}
               </p>
             )}
-            <p className="text-xs text-muted-foreground">
-              Уточняйте актуальную цену у менеджера
-            </p>
           </div>
 
           {priceTiers && priceTiers.length > 0 && (

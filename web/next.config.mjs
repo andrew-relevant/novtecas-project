@@ -19,6 +19,18 @@ const nextConfig = {
       },
     ],
   },
+  async rewrites() {
+    const strapiUrl =
+      process.env.STRAPI_INTERNAL_URL ||
+      process.env.NEXT_PUBLIC_STRAPI_URL ||
+      "http://localhost:1337";
+    return [
+      {
+        source: "/uploads/:path*",
+        destination: `${strapiUrl}/uploads/:path*`,
+      },
+    ];
+  },
   async redirects() {
     return [
       // Company section

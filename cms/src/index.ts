@@ -1,3 +1,54 @@
+import fs from "fs";
+import path from "path";
+
+const SEED_IMAGES_DIR = path.join(process.cwd(), "seeds", "images");
+
+const MIME_TYPES: Record<string, string> = {
+  ".jpg": "image/jpeg",
+  ".jpeg": "image/jpeg",
+  ".png": "image/png",
+  ".webp": "image/webp",
+};
+
+/** Загружает один файл из src/seeds/images/ в Strapi Media Library.
+ *  Если файл не найден — возвращает null (поле остаётся пустым). */
+async function uploadSeedFile(
+  strapi: any,
+  fileName: string,
+  altText: string
+): Promise<number | null> {
+  const filePath = path.join(SEED_IMAGES_DIR, fileName);
+  if (!fs.existsSync(filePath)) return null;
+
+  try {
+    const stat = fs.statSync(filePath);
+    const mimeType = MIME_TYPES[path.extname(fileName).toLowerCase()] ?? "image/jpeg";
+    const uploadService = strapi.plugin("upload").service("upload");
+    const [file] = await uploadService.upload({
+      data: { fileInfo: { name: fileName, alternativeText: altText, caption: altText } },
+      files: { filepath: filePath, originalFilename: fileName, mimetype: mimeType, size: stat.size },
+    });
+    return file?.id ?? null;
+  } catch (err) {
+    strapi.log.warn(`Seed: ошибка загрузки "${fileName}": ${err.message}`);
+    return null;
+  }
+}
+
+/** Загружает несколько файлов галереи и возвращает массив их ID. */
+async function uploadSeedGallery(
+  strapi: any,
+  fileNames: string[],
+  altText: string
+): Promise<number[]> {
+  const ids: number[] = [];
+  for (const fileName of fileNames) {
+    const id = await uploadSeedFile(strapi, fileName, altText);
+    if (id !== null) ids.push(id);
+  }
+  return ids;
+}
+
 async function ensurePublicPermissions(strapi) {
   const publicRole = await strapi.db
     .query("plugin::users-permissions.role")
@@ -109,21 +160,99 @@ export default {
     });
 
     // --- Products ---
+    // imageFile:    обложка товара     → cms/src/seeds/images/<fileName>
+    // galleryFiles: галерея (массив)   → cms/src/seeds/images/<fileName>
+    // Отсутствующие файлы пропускаются без ошибок.
     const productsData = [
-      { Title: "Холодный асфальт 35 кг (до 1000 кг)", Slug: "cold-asphalt-35kg-under-1000", Short_Description: "Цена при оплате менее 1000 кг. Стандартная фасовка в полиэтиленовых мешках.", Price_Rub: 680, Unit_of_Measure: "мешок", Weight: "35 кг", isFeatured: true, isCustomOrder: false, category: catCold.documentId, Full_Description: "<p>Холодный асфальт Perma Patch в полиэтиленовых мешках по 35 кг — стандартная упаковка, всегда в наличии на складе. Идеально подходит для ямочного ремонта дорог, тротуаров и парковок.</p><p>Состав может уплотняться даже при -27°С, сохраняя подвижность и качество материала.</p>", priceTiers: [{ minQtyKg: 0, price: 680, label: "до 1000 кг" }, { minQtyKg: 1000, price: 640, label: "от 1000 кг" }, { minQtyKg: 5000, price: 610, label: "от 5000 кг" }] },
-      { Title: "Холодный асфальт 35 кг (от 1000 кг)", Slug: "cold-asphalt-35kg-from-1000", Short_Description: "Цена при оплате более 1000 кг. Стандартная фасовка в полиэтиленовых мешках.", Price_Rub: 640, Unit_of_Measure: "мешок", Weight: "35 кг", isFeatured: true, isCustomOrder: false, category: catCold.documentId, Full_Description: "<p>Холодный асфальт Perma Patch в мешках по 35 кг. Оптовая цена при заказе от 1000 кг. Стандартная упаковка, всегда в наличии.</p>" },
-      { Title: "Холодный асфальт 35 кг (от 5000 кг)", Slug: "cold-asphalt-35kg-from-5000", Short_Description: "Оптовая партия от 5000 кг. Максимально выгодная цена.", Price_Rub: 610, Unit_of_Measure: "мешок", Weight: "35 кг", isFeatured: true, isCustomOrder: false, category: catCold.documentId, Full_Description: "<p>Холодный асфальт Perma Patch — лучшая цена при крупном опте от 5000 кг. Упаковка 35 кг, всегда в наличии.</p>" },
-      { Title: "Холодный асфальт 50 кг (полипропилен)", Slug: "cold-asphalt-50kg", Short_Description: "Под спецзаказ при определённой партии. Полипропиленовые мешки.", Price_Rub: 760, Unit_of_Measure: "мешок", Weight: "50 кг", isFeatured: false, isCustomOrder: true, category: catCold.documentId, Full_Description: "<p>Холодный асфальт в полипропиленовых мешках по 50 кг. Производится под спецзаказ при определённой партии. Уточняйте актуальную цену у менеджера.</p>" },
-      { Title: "Холодный асфальт 30 кг (полипропилен)", Slug: "cold-asphalt-30kg", Short_Description: "Под спецзаказ при определённой партии. Минимальная партия — 1 тонна.", Price_Rub: 470, Unit_of_Measure: "мешок", Weight: "30 кг", isFeatured: false, isCustomOrder: true, category: catCold.documentId, Full_Description: "<p>Холодный асфальт Perma Patch в мешках по 30 кг. Фасовка в полипропилен под заказ. Минимальная партия — 1 тонна.</p>" },
-      { Title: "Холодный асфальт 1000 кг (биг-бег)", Slug: "cold-asphalt-1000kg", Short_Description: "Холодный асфальт Perma Patch в биг-бегах по 1000 кг.", Price_Rub: 17910, Unit_of_Measure: "тонна", Weight: "1000 кг", isFeatured: false, isCustomOrder: true, category: catCold.documentId, Full_Description: "<p>Холодный асфальт Perma Patch фасовка в биг-бегах по 1000 кг. Экономичный вариант для крупных объёмов работ.</p>" },
-      { Title: "Красный холодный асфальт Perma Patch COLOR (мешки)", Slug: "red-cold-asphalt-bags", Short_Description: "Цветной холодный асфальт для выделения дорожных зон и покрытий.", Price_Rub: 1565, Unit_of_Measure: "мешок", Weight: "35 кг", isFeatured: false, isCustomOrder: true, category: catCold.documentId, Full_Description: "<p>Красный холодный асфальт Perma Patch COLOR — декоративное покрытие для выделения пешеходных зон, велодорожек и специальных площадок. Уточняйте актуальную цену.</p>" },
-      { Title: "Вяжущее для холодного асфальта 205 л (185 кг)", Slug: "binder-perma-patch-205l", Short_Description: "Вяжущее для производства холодного асфальта Perma Patch.", Price_Rub: 34385, Unit_of_Measure: "бочка", Weight: "185 кг", isFeatured: false, isCustomOrder: true, category: catCold.documentId, Full_Description: "<p>Вяжущее (концентрат) для производства холодного асфальта по канадской технологии Perma Patch. Объём 205 литров (185 кг).</p>" },
-      { Title: "Мешки полиэтиленовые для холодного асфальта", Slug: "pe-bags-cold-asphalt", Short_Description: "Мешки полиэтиленовые с заваренным дном, для пакетирования холодного асфальта по 25 или 30 кг.", Price_Rub: 95, Unit_of_Measure: "шт.", Weight: "—", isFeatured: false, isCustomOrder: false, category: catBags.documentId, Full_Description: "<p>Мешки полиэтиленовые с заваренным дном, без боковых складок, для пакетирования холодного асфальта по 25 или 30 кг.</p>" },
+      {
+        Title: "Холодный асфальт 35 кг (до 1000 кг)", Slug: "cold-asphalt-35kg-under-1000",
+        Short_Description: "Цена при оплате менее 1000 кг. Стандартная фасовка в полиэтиленовых мешках.",
+        Price_Rub: 680, Unit_of_Measure: "мешок", Weight: "35 кг", isFeatured: true, isCustomOrder: false, Show_Price_Note: true, Price_Note: "Уточняйте актуальную цену у менеджера", category: catCold.documentId,
+        Full_Description: "<p>Холодный асфальт Perma Patch в полиэтиленовых мешках по 35 кг — стандартная упаковка, всегда в наличии на складе. Идеально подходит для ямочного ремонта дорог, тротуаров и парковок.</p><p>Состав может уплотняться даже при -27°С, сохраняя подвижность и качество материала.</p>",
+        priceTiers: [{ minQtyKg: 0, price: 680, label: "до 1000 кг" }, { minQtyKg: 1000, price: 640, label: "от 1000 кг" }, { minQtyKg: 5000, price: 610, label: "от 5000 кг" }],
+        imageFile: "35kg.jpg",
+        galleryFiles: ["35kg.jpg"],
+      },
+      {
+        Title: "Холодный асфальт 35 кг (от 1000 кг)", Slug: "cold-asphalt-35kg-from-1000",
+        Short_Description: "Цена при оплате более 1000 кг. Стандартная фасовка в полиэтиленовых мешках.",
+        Price_Rub: 640, Unit_of_Measure: "мешок", Weight: "35 кг", isFeatured: true, isCustomOrder: false, Show_Price_Note: true, Price_Note: "Уточняйте актуальную цену у менеджера", category: catCold.documentId,
+        Full_Description: "<p>Холодный асфальт Perma Patch в мешках по 35 кг. Оптовая цена при заказе от 1000 кг. Стандартная упаковка, всегда в наличии.</p>",
+        imageFile: "35kg.jpg",
+        galleryFiles: ["35kg.jpg"],
+      },
+      {
+        Title: "Холодный асфальт 35 кг (от 5000 кг)", Slug: "cold-asphalt-35kg-from-5000",
+        Short_Description: "Оптовая партия от 5000 кг. Максимально выгодная цена.",
+        Price_Rub: 610, Unit_of_Measure: "мешок", Weight: "35 кг", isFeatured: true, isCustomOrder: false, Show_Price_Note: true, Price_Note: "Уточняйте актуальную цену у менеджера", category: catCold.documentId,
+        Full_Description: "<p>Холодный асфальт Perma Patch — лучшая цена при крупном опте от 5000 кг. Упаковка 35 кг, всегда в наличии.</p>",
+        imageFile: "35kg.jpg",
+        galleryFiles: ["35kg.jpg"],
+      },
+      {
+        Title: "Холодный асфальт 50 кг (полипропилен)", Slug: "cold-asphalt-50kg",
+        Short_Description: "Под спецзаказ при определённой партии. Полипропиленовые мешки.",
+        Price_Rub: 760, Unit_of_Measure: "мешок", Weight: "50 кг", isFeatured: false, isCustomOrder: true, Show_Price_Note: true, Price_Note: "Уточняйте актуальную цену у менеджера", category: catCold.documentId,
+        Full_Description: "<p>Холодный асфальт в полипропиленовых мешках по 50 кг. Производится под спецзаказ при определённой партии. Уточняйте актуальную цену у менеджера.</p>",
+        imageFile: "30-50kg.jpg",
+        galleryFiles: ["30-50kg.jpg"],
+      },
+      {
+        Title: "Холодный асфальт 30 кг (полипропилен)", Slug: "cold-asphalt-30kg",
+        Short_Description: "Под спецзаказ при определённой партии. Минимальная партия — 1 тонна.",
+        Price_Rub: 470, Unit_of_Measure: "мешок", Weight: "30 кг", isFeatured: false, isCustomOrder: true, Show_Price_Note: true, Price_Note: "Уточняйте актуальную цену у менеджера", category: catCold.documentId,
+        Full_Description: "<p>Холодный асфальт Perma Patch в мешках по 30 кг. Фасовка в полипропилен под заказ. Минимальная партия — 1 тонна.</p>",
+        imageFile: "30-50kg.jpg",
+        galleryFiles: ["30-50kg.jpg"],
+      },
+      {
+        Title: "Холодный асфальт 1000 кг (биг-бег)", Slug: "cold-asphalt-1000kg",
+        Short_Description: "Холодный асфальт Perma Patch в биг-бегах по 1000 кг.",
+        Price_Rub: 17910, Unit_of_Measure: "тонна", Weight: "1000 кг", isFeatured: false, isCustomOrder: true, Show_Price_Note: true, Price_Note: "Уточняйте актуальную цену у менеджера", category: catCold.documentId,
+        Full_Description: "<p>Холодный асфальт Perma Patch фасовка в биг-бегах по 1000 кг. Экономичный вариант для крупных объёмов работ.</p>",
+        imageFile: "1000kg.jpg",
+        galleryFiles: ["1000kg.jpg"],
+      },
+      {
+        Title: "Красный холодный асфальт Perma Patch COLOR (мешки)", Slug: "red-cold-asphalt-bags",
+        Short_Description: "Цветной холодный асфальт для выделения дорожных зон и покрытий.",
+        Price_Rub: 1565, Unit_of_Measure: "мешок", Weight: "35 кг", isFeatured: false, isCustomOrder: true, Show_Price_Note: true, Price_Note: "Уточняйте актуальную цену у менеджера", category: catCold.documentId,
+        Full_Description: "<p>Красный холодный асфальт Perma Patch COLOR — декоративное покрытие для выделения пешеходных зон, велодорожек и специальных площадок. Уточняйте актуальную цену.</p>",
+        imageFile: "1000kg.jpg",
+        galleryFiles: ["1000kg.jpg","red1.jpg","red2.jpg"],
+      },
+      {
+        Title: "Вяжущее для холодного асфальта 205 л (185 кг)", Slug: "binder-perma-patch-205l",
+        Short_Description: "Вяжущее для производства холодного асфальта Perma Patch.",
+        Price_Rub: 34385, Unit_of_Measure: "бочка", Weight: "185 кг", isFeatured: false, isCustomOrder: true, Show_Price_Note: true, Price_Note: "Уточняйте актуальную цену у менеджера", category: catCold.documentId,
+        Full_Description: "<p>Вяжущее (концентрат) для производства холодного асфальта по канадской технологии Perma Patch. Объём 205 литров (185 кг).</p>",
+        imageFile: "vyazhuschee.jpg",
+        galleryFiles: ["vyazhuschee.jpg"],
+      },
+      {
+        Title: "Мешки полиэтиленовые для холодного асфальта", Slug: "pe-bags-cold-asphalt",
+        Short_Description: "Мешки полиэтиленовые с заваренным дном, для пакетирования холодного асфальта по 25 или 30 кг.",
+        Price_Rub: 95, Unit_of_Measure: "шт.", Weight: "—", isFeatured: false, isCustomOrder: false, Show_Price_Note: true, Price_Note: "Уточняйте актуальную цену у менеджера", category: catBags.documentId,
+        Full_Description: "<p>Мешки полиэтиленовые с заваренным дном, без боковых складок, для пакетирования холодного асфальта по 25 или 30 кг.</p>",
+        imageFile: "meshki.jpg",
+        galleryFiles: ["meshki.jpg"],
+      },
     ];
 
     for (const p of productsData) {
+      const { imageFile, galleryFiles, ...productData } = p;
+
+      const [imageId, galleryIds] = await Promise.all([
+        uploadSeedFile(strapi, imageFile, productData.Title),
+        uploadSeedGallery(strapi, galleryFiles, productData.Title),
+      ]);
+
       await strapi.documents("api::product.product").create({
-        data: p,
+        data: {
+          ...productData,
+          ...(imageId ? { Image: imageId } : {}),
+          ...(galleryIds.length ? { Gallery: galleryIds } : {}),
+        },
         status: "published",
       });
     }

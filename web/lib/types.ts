@@ -65,6 +65,8 @@ export interface Product {
   Specs: Record<string, string> | null;
   isFeatured: boolean;
   isCustomOrder: boolean;
+  Show_Price_Note: boolean;
+  Price_Note: string | null;
   priceTiers: PriceTier[];
   category: ProductCategory | null;
   Related_Products: Product[];
@@ -185,7 +187,7 @@ export interface PageAbout {
   Intro_Text: string | null;
   Full_Text: string | null;
   Sidebar_Image: StrapiMediaItem | null;
-  Requisites_Table: Record<string, string>[] | null;
+  Requisites_Table: { id?: number; label: string; value: string }[] | null;
 }
 
 export interface PageProduction {

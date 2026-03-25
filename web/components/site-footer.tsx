@@ -68,8 +68,8 @@ export function SiteFooter() {
               <div className="flex items-start gap-2">
                 <MapPin className="mt-0.5 h-4 w-4 shrink-0" />
                 <span>
-                  119180, г. Москва, ул. Большая Полянка, д. 51А/9, этаж 8,
-                  помещение 1
+                  119180, г. Москва<br/> ул. Большая Полянка, д. 51А/9, этаж 8,
+                  помещение&nbsp;1
                 </span>
               </div>
               <p className="text-xs">Часы работы: 08:00–20:00</p>

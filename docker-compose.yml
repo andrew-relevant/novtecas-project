@@ -42,6 +42,7 @@ services:
       - cms_node_modules:/opt/app/node_modules
     ports:
       - "1337:1337"
+      - "5173:5173"
     networks:
       - novtecas-net
     depends_on:

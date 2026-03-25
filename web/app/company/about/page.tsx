@@ -36,11 +36,8 @@ export default async function AboutPage() {
 
   const requisitesText = attrs.Requisites_Table
     ? attrs.Requisites_Table.map((row) =>
-        Object.entries(row)
-          .filter(([key]) => key !== "id")
-          .map(([key, value]) => `${key}: ${value}`)
-          .join("\n"),
-      ).join("\n\n")
+        `${row.label}: ${row.value}`,
+      ).join("\n")
     : "";
 
   return (
@@ -77,21 +74,17 @@ export default async function AboutPage() {
           <div className="mt-4 overflow-x-auto rounded-lg border">
             <table className="w-full text-sm">
               <tbody>
-                {attrs.Requisites_Table.map((row, idx) =>
-                  Object.entries(row)
-                    .filter(([key]) => key !== "id")
-                    .map(([key, value]) => (
+                {attrs.Requisites_Table.map((row, idx) => (
                       <tr
-                        key={`${idx}-${key}`}
+                        key={idx}
                         className="border-b last:border-b-0"
                       >
-                        <td className="whitespace-nowrap px-4 py-2 font-medium text-muted-foreground">
-                          {key}
+                        <td className="whitespace-nowrap px-4 py-2 font-bold text-muted-foreground">
+                          {row.label}
                         </td>
-                        <td className="px-4 py-2">{value}</td>
+                        <td className="px-4 py-2">{row.value}</td>
                       </tr>
-                    )),
-                )}
+                    ))}
               </tbody>
             </table>
           </div>

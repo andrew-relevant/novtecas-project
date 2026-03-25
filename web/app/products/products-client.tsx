@@ -24,9 +24,6 @@ export function ProductsClient({ products, categories }: ProductsClientProps) {
     );
   }, [products, activeCategory]);
 
-  const inStock = filtered.filter((p) => !p.isCustomOrder);
-  const customOrder = filtered.filter((p) => p.isCustomOrder);
-
   function handleBuyClick(title: string) {
     setSelectedProduct(title);
     setBuyOpen(true);
@@ -49,37 +46,17 @@ export function ProductsClient({ products, categories }: ProductsClientProps) {
         </TabsList>
       </Tabs>
 
-      {inStock.length > 0 && (
-        <div className="mt-8">
-          <h2 className="text-2xl font-semibold">В наличии</h2>
-          <div className="mt-4 grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {inStock.map((product) => (
-              <ProductCard
-                key={product.id}
-                product={product}
-                onBuyClick={handleBuyClick}
-              />
-            ))}
-          </div>
+      {filtered.length > 0 ? (
+        <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          {filtered.map((product) => (
+            <ProductCard
+              key={product.id}
+              product={product}
+              onBuyClick={handleBuyClick}
+            />
+          ))}
         </div>
-      )}
-
-      {customOrder.length > 0 && (
-        <div className="mt-10">
-          <h2 className="text-2xl font-semibold">Под заказ</h2>
-          <div className="mt-4 grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {customOrder.map((product) => (
-              <ProductCard
-                key={product.id}
-                product={product}
-                onBuyClick={handleBuyClick}
-              />
-            ))}
-          </div>
-        </div>
-      )}
-
-      {filtered.length === 0 && (
+      ) : (
         <p className="mt-8 text-center text-muted-foreground">
           Товары в этой категории не найдены
         </p>

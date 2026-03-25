@@ -2,7 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+
 import { getStrapiMedia } from "@/lib/strapi";
 import type { Product } from "@/lib/types";
 
@@ -12,7 +12,7 @@ interface ProductCardProps {
 }
 
 export function ProductCard({ product, onBuyClick }: ProductCardProps) {
-  const { Title, Slug, Short_Description, Price_Rub, Unit_of_Measure, Image: img, isCustomOrder } =
+  const { Title, Slug, Short_Description, Price_Rub, Unit_of_Measure, Image: img } =
     product;
   const imageUrl = getStrapiMedia(img?.url ?? null);
 
@@ -33,11 +33,7 @@ export function ProductCard({ product, onBuyClick }: ProductCardProps) {
               Нет фото
             </div>
           )}
-          {isCustomOrder && (
-            <Badge variant="secondary" className="absolute right-2 top-2">
-              Под заказ
-            </Badge>
-          )}
+
         </div>
       </Link>
       <CardContent className="p-4">

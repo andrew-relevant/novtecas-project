@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { Button } from "@/components/ui/button";
 import { ProductCard } from "@/components/product-card";
 import { Calculator } from "@/components/calculator";
 import { ModalForm } from "@/components/modal-form";
@@ -33,11 +32,6 @@ export function ProductDetailClient({
 
   return (
     <>
-      {/* Buy button */}
-      <Button size="lg" className="mt-4 w-full" onClick={() => setBuyOpen(true)}>
-        Купить
-      </Button>
-
       {/* Calculator */}
       <div className="mt-8">
         <Calculator />
