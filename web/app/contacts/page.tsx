@@ -25,7 +25,7 @@ const MAP_CENTER = { lat: 55.7367, lng: 37.6186 };
 export default async function ContactsPage() {
   const { data: pageContacts } = await fetchStrapi<StrapiResponse<PageContacts>>(
     "/page-contacts",
-    { params: { "populate[departments]": "true" }, fallback: null },
+    { params: { "populate[departments]": "true" }, fallback: { data: null } },
   );
 
   const departments = pageContacts?.departments ?? [];
