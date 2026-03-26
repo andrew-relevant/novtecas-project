@@ -20,3 +20,12 @@ docker compose -f docker-compose.prod.yml up -d
 
 # Выгрузить на прод из гита
 git pull origin main
+
+# Собрать CMS отдельно
+docker compose -f docker-compose.prod.yml build --no-cache cms
+
+# Затем Web отдельно
+docker compose -f docker-compose.prod.yml build --no-cache web
+
+# Запустить
+docker compose -f docker-compose.prod.yml up -d
