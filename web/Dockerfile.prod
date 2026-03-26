@@ -8,6 +8,7 @@ WORKDIR /opt/app
 COPY --from=deps /opt/app/node_modules ./node_modules
 COPY . .
 ENV NEXT_TELEMETRY_DISABLED=1
+ENV NODE_OPTIONS="--max-old-space-size=1536"
 ARG STRAPI_INTERNAL_URL=http://cms:1337
 ENV STRAPI_INTERNAL_URL=$STRAPI_INTERNAL_URL
 RUN npm run build
