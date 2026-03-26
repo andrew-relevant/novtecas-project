@@ -13,10 +13,10 @@ import {
 import {
   Dialog,
   DialogContent,
-  DialogClose,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { X } from "lucide-react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 interface CarouselImage {
   src: string;
@@ -39,6 +39,11 @@ export function ProductCarousel({ images }: ProductCarouselProps) {
       setSelectedIndex(emblaApi.selectedScrollSnap());
     });
   };
+
+  const prev = () =>
+    setSelectedIndex((i) => (i - 1 + images.length) % images.length);
+  const next = () =>
+    setSelectedIndex((i) => (i + 1) % images.length);
 
   if (images.length === 0) return null;
 
@@ -81,27 +86,46 @@ export function ProductCarousel({ images }: ProductCarouselProps) {
       </Carousel>
 
       <Dialog open={lightboxOpen} onOpenChange={setLightboxOpen}>
-        <DialogContent className="max-w-[95vw] border-none bg-transparent p-0 shadow-none sm:max-w-5xl [&>button:last-child]:hidden">
+        <DialogContent
+          className="max-w-4xl border-none bg-transparent p-0 shadow-none [&>button]:rounded-full [&>button]:bg-black/50 [&>button]:p-1.5 [&>button]:text-white [&>button]:opacity-100 [&>button]:hover:bg-black/70 [&>button]:[&_svg]:h-5 [&>button]:[&_svg]:w-5"
+          aria-describedby={undefined}
+        >
           <DialogTitle className="sr-only">
             {images[selectedIndex].alt}
           </DialogTitle>
-          <DialogClose className="absolute -top-2 right-0 z-50 rounded-full bg-black/60 p-2 text-white transition-colors hover:bg-black/80 focus:outline-none focus:ring-2 focus:ring-white sm:-right-4 sm:-top-4">
-            <X className="h-5 w-5" />
-            <span className="sr-only">Закрыть</span>
-          </DialogClose>
-          <button
-            type="button"
-            className="relative mx-auto h-[85vh] w-full cursor-pointer"
-            onClick={() => setLightboxOpen(false)}
-          >
-            <Image
-              src={images[selectedIndex].src}
-              alt={images[selectedIndex].alt}
-              fill
-              className="rounded-lg object-contain"
-              sizes="95vw"
-            />
-          </button>
+          <div className="relative flex items-center justify-center">
+            {images.length > 1 && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="absolute left-2 z-10 bg-black/50 text-white hover:bg-black/70"
+                onClick={prev}
+              >
+                <ChevronLeft className="h-6 w-6" />
+              </Button>
+            )}
+
+            <div className="relative h-[80vh] w-full">
+              <Image
+                src={images[selectedIndex].src}
+                alt={images[selectedIndex].alt}
+                fill
+                className="rounded-lg object-contain"
+                sizes="(max-width: 768px) 100vw, 896px"
+              />
+            </div>
+
+            {images.length > 1 && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="absolute right-2 z-10 bg-black/50 text-white hover:bg-black/70"
+                onClick={next}
+              >
+                <ChevronRight className="h-6 w-6" />
+              </Button>
+            )}
+          </div>
         </DialogContent>
       </Dialog>
     </>

@@ -1,9 +1,10 @@
 "use client";
 
-import { useForm } from "react-hook-form";
+import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { PhoneInput } from "@/components/ui/phone-input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -24,10 +25,11 @@ export function DealerForm({ onSuccess }: DealerFormProps) {
     setValue,
     watch,
     reset,
+    control,
     formState: { errors, isSubmitting },
   } = useForm<DealerFormData>({
     resolver: zodResolver(dealerFormSchema),
-    defaultValues: { consent: undefined },
+    defaultValues: { name: "", phone: "", consent: false },
   });
 
   const consent = watch("consent");
@@ -61,7 +63,18 @@ export function DealerForm({ onSuccess }: DealerFormProps) {
       </div>
       <div>
         <Label htmlFor="dealer-phone">Телефон *</Label>
-        <Input id="dealer-phone" type="tel" {...register("phone")} />
+        <Controller
+          name="phone"
+          control={control}
+          render={({ field }) => (
+            <PhoneInput
+              id="dealer-phone"
+              value={field.value}
+              onChange={field.onChange}
+              onBlur={field.onBlur}
+            />
+          )}
+        />
         {errors.phone && <p className="mt-1 text-xs text-destructive">{errors.phone.message}</p>}
       </div>
       <div>
@@ -81,7 +94,7 @@ export function DealerForm({ onSuccess }: DealerFormProps) {
         <Checkbox
           id="dealer-consent"
           checked={consent === true}
-          onCheckedChange={(checked) => setValue("consent", checked === true ? true : (undefined as unknown as true))}
+          onCheckedChange={(checked) => setValue("consent", checked === true)}
         />
         <Label htmlFor="dealer-consent" className="text-xs leading-tight">
           Согласен на{" "}

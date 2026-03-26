@@ -203,10 +203,17 @@ export interface PageBlacklist {
   Text_Content: string | null;
 }
 
+export interface Department {
+  id: number;
+  name: string;
+  extension: string;
+}
+
 export interface PageContacts {
   id: number;
   documentId: string;
   Contact_Info: string | null;
+  departments: Department[];
 }
 
 export interface PageDealers {

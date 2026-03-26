@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Image from "next/image";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { getStrapiMedia } from "@/lib/strapi";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -56,7 +56,8 @@ export function Gallery({ items }: GalleryProps) {
         open={activeIndex !== null}
         onOpenChange={() => setActiveIndex(null)}
       >
-        <DialogContent className="max-w-4xl border-none bg-transparent p-0 shadow-none">
+        <DialogContent className="max-w-4xl border-none bg-transparent p-0 shadow-none [&>button]:rounded-full [&>button]:bg-black/50 [&>button]:p-1.5 [&>button]:text-white [&>button]:opacity-100 [&>button]:hover:bg-black/70 [&>button]:[&_svg]:h-5 [&>button]:[&_svg]:w-5" aria-describedby={undefined}>
+          <DialogTitle className="sr-only">Просмотр изображения</DialogTitle>
           {activeIndex !== null && (
             <div className="relative flex items-center justify-center">
               {items.length > 1 && (
@@ -70,7 +71,7 @@ export function Gallery({ items }: GalleryProps) {
                 </Button>
               )}
 
-              <div className="relative max-h-[80vh] w-full">
+              <div className="relative h-[80vh] w-full">
                 {(() => {
                   const src = getStrapiMedia(items[activeIndex].url);
                   if (!src) return null;
@@ -78,9 +79,9 @@ export function Gallery({ items }: GalleryProps) {
                     <Image
                       src={src}
                       alt={items[activeIndex].alt}
-                      width={items[activeIndex].width}
-                      height={items[activeIndex].height}
-                      className="mx-auto max-h-[80vh] w-auto rounded-lg object-contain"
+                      fill
+                      className="rounded-lg object-contain"
+                      sizes="(max-width: 768px) 100vw, 896px"
                     />
                   );
                 })()}

@@ -1,0 +1,19 @@
+{
+  "collectionName": "components_shared_departments",
+  "info": {
+    "displayName": "Department",
+    "icon": "briefcase",
+    "description": "Отдел компании с добавочным номером"
+  },
+  "options": {},
+  "attributes": {
+    "name": {
+      "type": "string",
+      "required": true
+    },
+    "extension": {
+      "type": "string",
+      "required": true
+    }
+  }
+}

@@ -34,7 +34,7 @@ export function Calculator({ onOrder }: CalculatorProps) {
   }, [length, width, depth, bagWeight]);
 
   return (
-    <Card>
+    <Card className="bg-muted">
       <CardHeader>
         <CardTitle className="flex items-center gap-2 text-lg">
           <CalcIcon className="h-5 w-5" />

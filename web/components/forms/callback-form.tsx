@@ -1,9 +1,11 @@
 "use client";
 
-import { useForm } from "react-hook-form";
+import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { PhoneInput } from "@/components/ui/phone-input";
+import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
@@ -23,10 +25,11 @@ export function CallbackForm({ onSuccess }: CallbackFormProps) {
     setValue,
     watch,
     reset,
+    control,
     formState: { errors, isSubmitting },
   } = useForm<CallbackFormData>({
     resolver: zodResolver(callbackFormSchema),
-    defaultValues: { consent: undefined },
+    defaultValues: { name: "", phone: "", consent: false },
   });
 
   const consent = watch("consent");
@@ -60,14 +63,29 @@ export function CallbackForm({ onSuccess }: CallbackFormProps) {
       </div>
       <div>
         <Label htmlFor="cb-phone">Телефон *</Label>
-        <Input id="cb-phone" type="tel" {...register("phone")} />
+        <Controller
+          name="phone"
+          control={control}
+          render={({ field }) => (
+            <PhoneInput
+              id="cb-phone"
+              value={field.value}
+              onChange={field.onChange}
+              onBlur={field.onBlur}
+            />
+          )}
+        />
         {errors.phone && <p className="mt-1 text-xs text-destructive">{errors.phone.message}</p>}
+      </div>
+      <div>
+        <Label htmlFor="cb-message">Сообщение</Label>
+        <Textarea id="cb-message" {...register("message")} />
       </div>
       <div className="flex items-start gap-2">
         <Checkbox
           id="cb-consent"
           checked={consent === true}
-          onCheckedChange={(checked) => setValue("consent", checked === true ? true : (undefined as unknown as true))}
+          onCheckedChange={(checked) => setValue("consent", checked === true)}
         />
         <Label htmlFor="cb-consent" className="text-xs leading-tight">
           Согласен на{" "}

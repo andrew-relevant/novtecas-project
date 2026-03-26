@@ -31,7 +31,7 @@ export function ReviewForm({ productId, onSuccess }: ReviewFormProps) {
     formState: { errors, isSubmitting },
   } = useForm<ReviewFormData>({
     resolver: zodResolver(reviewFormSchema),
-    defaultValues: { rating: 5, consent: undefined },
+    defaultValues: { author: "", text: "", rating: 5, consent: false },
   });
 
   const consent = watch("consent");
@@ -96,7 +96,7 @@ export function ReviewForm({ productId, onSuccess }: ReviewFormProps) {
         <Checkbox
           id="review-consent"
           checked={consent === true}
-          onCheckedChange={(checked) => setValue("consent", checked === true ? true : (undefined as unknown as true))}
+          onCheckedChange={(checked) => setValue("consent", checked === true)}
         />
         <Label htmlFor="review-consent" className="text-xs leading-tight">
           Согласен на{" "}

@@ -3,6 +3,8 @@ import { Breadcrumbs } from "@/components/breadcrumbs";
 import { ContactForm } from "@/components/forms/contact-form";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Clock, Mail, MapPin, Phone } from "lucide-react";
+import { fetchStrapi } from "@/lib/strapi";
+import { PageContacts, StrapiResponse } from "@/lib/types";
 
 export const metadata: Metadata = {
   title: "Контакты",
@@ -20,7 +22,14 @@ const CONTACTS = {
 
 const MAP_CENTER = { lat: 55.7367, lng: 37.6186 };
 
-export default function ContactsPage() {
+export default async function ContactsPage() {
+  const { data: pageContacts } = await fetchStrapi<StrapiResponse<PageContacts>>(
+    "/page-contacts",
+    { params: { "populate[departments]": "true" }, fallback: null },
+  );
+
+  const departments = pageContacts?.departments ?? [];
+
   return (
     <div className="container mx-auto px-4 py-8">
       <Breadcrumbs />
@@ -45,6 +54,15 @@ export default function ContactsPage() {
                       {phone}
                     </a>
                   ))}
+                  {departments.length > 0 && (
+                    <div className="mt-2 space-y-0.5 text-sm text-muted-foreground">
+                      {departments.map((dept) => (
+                        <p key={dept.id}>
+                          {dept.name} — доп. номер ({dept.extension})
+                        </p>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
 

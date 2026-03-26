@@ -42,6 +42,19 @@ export interface SharedContactInfo extends Struct.ComponentSchema {
   };
 }
 
+export interface SharedDepartment extends Struct.ComponentSchema {
+  collectionName: 'components_shared_departments';
+  info: {
+    description: '\u041E\u0442\u0434\u0435\u043B \u043A\u043E\u043C\u043F\u0430\u043D\u0438\u0438 \u0441 \u0434\u043E\u0431\u0430\u0432\u043E\u0447\u043D\u044B\u043C \u043D\u043E\u043C\u0435\u0440\u043E\u043C';
+    displayName: 'Department';
+    icon: 'briefcase';
+  };
+  attributes: {
+    extension: Schema.Attribute.String & Schema.Attribute.Required;
+    name: Schema.Attribute.String & Schema.Attribute.Required;
+  };
+}
+
 export interface SharedPriceTier extends Struct.ComponentSchema {
   collectionName: 'components_shared_price_tiers';
   info: {
@@ -76,6 +89,7 @@ declare module '@strapi/strapi' {
       'shared.advantage': SharedAdvantage;
       'shared.application-area': SharedApplicationArea;
       'shared.contact-info': SharedContactInfo;
+      'shared.department': SharedDepartment;
       'shared.price-tier': SharedPriceTier;
       'shared.seo': SharedSeo;
     }

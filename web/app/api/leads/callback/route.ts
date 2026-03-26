@@ -39,6 +39,7 @@ export async function POST(request: Request) {
       type: "callback" as const,
       name: rest.name,
       phone: rest.phone,
+      message: rest.message || "",
     };
 
     const res = await fetch(`${strapiUrl.replace(/\/$/, "")}/api/leads`, {

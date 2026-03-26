@@ -2,12 +2,14 @@ import fs from "fs";
 import path from "path";
 
 const SEED_IMAGES_DIR = path.join(process.cwd(), "seeds", "images");
+const SEED_DOCUMENTS_DIR = path.join(process.cwd(), "seeds", "documents");
 
 const MIME_TYPES: Record<string, string> = {
   ".jpg": "image/jpeg",
   ".jpeg": "image/jpeg",
   ".png": "image/png",
   ".webp": "image/webp",
+  ".pdf": "application/pdf",
 };
 
 /** Загружает один файл из src/seeds/images/ в Strapi Media Library.
@@ -17,6 +19,15 @@ async function uploadSeedFile(
   fileName: string,
   altText: string
 ): Promise<number | null> {
+  const result = await uploadSeedFileWithMeta(strapi, fileName, altText);
+  return result?.id ?? null;
+}
+
+async function uploadSeedFileWithMeta(
+  strapi: any,
+  fileName: string,
+  altText: string
+): Promise<{ id: number; url: string } | null> {
   const filePath = path.join(SEED_IMAGES_DIR, fileName);
   if (!fs.existsSync(filePath)) return null;
 
@@ -28,9 +39,32 @@ async function uploadSeedFile(
       data: { fileInfo: { name: fileName, alternativeText: altText, caption: altText } },
       files: { filepath: filePath, originalFilename: fileName, mimetype: mimeType, size: stat.size },
     });
-    return file?.id ?? null;
+    return file ? { id: file.id, url: file.url } : null;
   } catch (err) {
     strapi.log.warn(`Seed: ошибка загрузки "${fileName}": ${err.message}`);
+    return null;
+  }
+}
+
+async function uploadSeedDocument(
+  strapi: any,
+  fileName: string,
+  altText: string
+): Promise<{ id: number; url: string } | null> {
+  const filePath = path.join(SEED_DOCUMENTS_DIR, fileName);
+  if (!fs.existsSync(filePath)) return null;
+
+  try {
+    const stat = fs.statSync(filePath);
+    const mimeType = MIME_TYPES[path.extname(fileName).toLowerCase()] ?? "application/octet-stream";
+    const uploadService = strapi.plugin("upload").service("upload");
+    const [file] = await uploadService.upload({
+      data: { fileInfo: { name: fileName, alternativeText: altText, caption: altText } },
+      files: { filepath: filePath, originalFilename: fileName, mimetype: mimeType, size: stat.size },
+    });
+    return file ? { id: file.id, url: file.url } : null;
+  } catch (err) {
+    strapi.log.warn(`Seed: ошибка загрузки документа "${fileName}": ${err.message}`);
     return null;
   }
 }
@@ -259,19 +293,17 @@ export default {
     }
 
     // --- Page About ---
+    const aboutBanner = await uploadSeedFileWithMeta(strapi, "about-banner.jpg", "О компании NovTecAs");
+    const aboutBannerHtml = aboutBanner
+      ? `<img src="${aboutBanner.url}" alt="О компании NovTecAs" style="width:100%;height:auto;border-radius:12px;" />`
+      : "";
     await strapi.documents("api::page-about.page-about").create({
       data: {
-        Intro_Text: "Компания «Новые Технологии Асфальта – NovTecAs» – это молодое и динамично развивающееся предприятие.",
-        Full_Text: `<p>Наша основная цель – ознакомить потребителей с продукцией McAsphalt Industries Limited (Канада). Материалы этого производителя используются для изготовления теплого и холодного асфальта. Также доступны гидроизоляционные мастики для ремонта дорожных полотен.</p>
-<p>Деятельность компании также связана с поставками оборудования для битумных хозяйств, продажей плавильно-заливочных котлов, систем АБЗ, антиобледенителей для железных дорог и аэропортов.</p>
-<p>Предприятие наладило выпуск холодного асфальта с использованием концентрата Perma Patch. Состав расфасован в удобные биг-беги (1000 кг) и пластиковые мешки (30 кг).</p>
-<h3>Преимущества сотрудничества с компанией</h3>
-<ul>
-<li>Применение новейших технологий и проверенных добавок, доказавших эффективность при использовании в суровых климатических условиях.</li>
-<li>Бесплатные консультации по вопросам приобретения, эксплуатации товаров.</li>
-<li>Оперативная доставка клиенту готовых составов и оборудования.</li>
-</ul>
-<p>Мы всегда открыты для нового сотрудничества и готовы оказать заказчикам поддержку по любым возникающим вопросам.</p>`,
+        Intro_Text: "«Новые Технологии Асфальта – NovTecAs» специализируется на реализации холодного асфальта для ремонта дорожных покрытий.",
+        Full_Text: `${aboutBannerHtml}<p>В основе продукта — концентрат <strong>Perma Patch</strong> от <strong>McAsphalt Industries Limited</strong> (Канада), который зарекомендовал себя как эффективное решение для быстрого и удобного ямочного ремонта.</p>
+        <p>Холодный асфальт <strong>NovTecAs</strong> подходит для применения в разных условиях и не требует сложной подготовки при использовании.</p>
+        <p>Материал поставляется в удобной фасовке: биг-беги по 1000 кг и пластиковые мешки по 30 кг.</p>
+        `,
         Requisites_Table: [
           { label: "Полное наименование", value: 'ООО "Новые Технологии Асфальта"' },
           { label: "ИНН", value: "7706439089" },
@@ -299,12 +331,17 @@ export default {
     });
 
     // --- Page Blacklist ---
+    const pretenziya = await uploadSeedDocument(strapi, "pretenziya-1-ot-20-05-2024.pdf", "Претензия 1 от 20.05.2024");
+    const pretenziyaLink = pretenziya
+      ? `<a href="${pretenziya.url}" download>Скачать претензию</a>`
+      : "Скачать претензию";
+
     await strapi.documents("api::page-blacklist.page-blacklist").create({
       data: {
         Text_Content: `<p>Предлагаем Вашему вниманию список компаний и людей, с которыми наша организация имеет негативный опыт сотрудничества и работа с которыми может быть опасна для Вас и Вашей компании:</p>
 <ol>
-<li><strong>ООО «Ямалгазпрогресс»</strong> (ИНН 7841407982) — между компаниями ООО «Ямалгазпрогресс» и ООО «Новые технологии асфальта» был заключён договор и соглашение о поставке дизельного топлива на 230 230,00 рублей от поставщика ООО «Ямалгазпрогресс». Прошло уже несколько месяцев, а договорные обязательства не были исполнены поставщиком. В ответ на нашу претензию компания направила ответное письмо, что денежные средства будут возвращены в течение 14 рабочих дней. На данный момент обязательства по договору не были исполнены. Возврата уплаченных средств также не поступило.</li>
-<li><strong>ООО «ТЕХНОРЭД»</strong> (ИНН 5036173648) — поставка некачественного оборудования.</li>
+<li><strong>ООО «Ямалгазпрогресс»</strong> (ИНН 7841407982) — между компаниями ООО «Ямалгазпрогресс» и ООО «Новые технологии асфальта» был заключён договор и соглашение о поставке дизельного топлива на 230 230,00 рублей от поставщика ООО «Ямалгазпрогресс». Прошло уже несколько месяцев, а договорные обязательства не были исполнены поставщиком. В ответ на нашу претензию компания направила ответное письмо, что денежные средства будут возвращены в течение 14 рабочих дней. На данный момент обязательства по договору не были исполнены. Возврата уплаченных средств также не поступило. За неисполнение договорных обязательств по настоящему договору компания ООО “Ямалгазпрогресс” понесет ответственность в соответствии с законодательством РФ.</li>
+<li><strong>ООО «ТЕХНОРЭД»</strong> (ИНН 5036173648) — поставка некачественного оборудования. ${pretenziyaLink}</li>
 </ol>`,
       },
       status: "published",
@@ -315,10 +352,12 @@ export default {
       data: {
         Contact_Info: `<p><strong>Адрес:</strong> 119180, Российская Федерация, г. Москва, ул. Большая Полянка, д. 51А/9, этаж 8, помещение 1</p>
 <p><strong>Склад:</strong> Московская обл., Домодедово, ул. Заборье, 2д, стр. 10</p>
-<p><strong>Телефон:</strong> +7 800 707-04-71, +7 (499) 504-41-63</p>
-<p>Отдел продаж — доп. номер (100)</p>
-<p>Финансовый отдел — доп. номер (101)</p>
-<p>Техническая поддержка — доп. номер (102)</p>`,
+<p><strong>Телефон:</strong> +7 800 707-04-71, +7 (499) 504-41-63</p>`,
+        departments: [
+          { name: "Отдел продаж", extension: "100" },
+          { name: "Финансовый отдел", extension: "101" },
+          { name: "Техническая поддержка", extension: "102" },
+        ],
       },
       status: "published",
     });
@@ -484,6 +523,53 @@ export default {
       },
     });
 
+    // --- Documents (certificates) ---
+    const documentsData = [
+      {
+        Title: "Сертификат соответствия Perma Patch",
+        Category: "Холодный асфальт",
+        imageFile: "doc-cert-perma-patch.jpg",
+        sortOrder: 1,
+      },
+      {
+        Title: 'Разрешение на использование знака соответствия системы сертификации "ГК-СТАНДАРТ"',
+        Category: "Холодный асфальт",
+        imageFile: "doc-gk-standart.jpg",
+        sortOrder: 2,
+      },
+      {
+        Title: "Сертификат соответствия производства холодных асфальтобетонных смесей PermaPatch Тип Бх и Гх, PermaPatch COLOR, PermaPatch АэРос",
+        Category: "Холодный асфальт",
+        imageFile: "doc-cert-permapatch-bx-gx.jpg",
+        sortOrder: 3,
+      },
+      {
+        Title: "Паспорт качества",
+        Category: "Холодный асфальт",
+        imageFile: "doc-passport-kachestva.jpg",
+        sortOrder: 4,
+      },
+      {
+        Title: 'Сертификат соответствия на "Битумную добавку Evotherm"',
+        Category: "Теплый асфальт",
+        imageFile: "doc-cert-evotherm.jpg",
+        sortOrder: 5,
+      },
+    ];
+
+    for (const doc of documentsData) {
+      const { imageFile, ...docData } = doc;
+      const previewId = await uploadSeedFile(strapi, imageFile, docData.Title);
+
+      await strapi.documents("api::document.document").create({
+        data: {
+          ...docData,
+          ...(previewId ? { Preview_Image: previewId, File: previewId } : {}),
+        },
+        status: "published",
+      });
+    }
+
     // --- Site Settings ---
     await strapi.documents("api::site-setting.site-setting").create({
       data: {
@@ -505,6 +591,7 @@ export default {
     strapi.log.info(`  - ${dealersData.length} dealers`);
     strapi.log.info(`  - ${portfolioData.length} portfolio items`);
     strapi.log.info(`  - ${articlesData.length} media items`);
+    strapi.log.info(`  - ${documentsData.length} documents`);
     strapi.log.info("  - Pages: About, Production, Blacklist, Contacts, Dealers, Privacy");
     strapi.log.info("  - Home Page");
     strapi.log.info("  - Site Settings");

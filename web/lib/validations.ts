@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-const phoneRegex = /^[\d\s+\-()]+$/;
+const phoneRegex = /^\+7 \(\d{3}\) \d{3}-\d{2}-\d{2}$/;
 
 const consentField = z.boolean().refine((val) => val === true, {
   message: "Необходимо согласие на обработку данных",
@@ -8,7 +8,7 @@ const consentField = z.boolean().refine((val) => val === true, {
 
 export const buyFormSchema = z.object({
   name: z.string().min(2, "Введите имя"),
-  phone: z.string().min(5, "Введите телефон").regex(phoneRegex, "Некорректный телефон"),
+  phone: z.string().min(1, "Введите телефон").regex(phoneRegex, "Введите телефон полностью"),
   email: z.string().email("Некорректный email").optional().or(z.literal("")),
   message: z.string().optional(),
   product: z.string().optional(),
@@ -18,7 +18,7 @@ export const buyFormSchema = z.object({
 
 export const dealerFormSchema = z.object({
   name: z.string().min(2, "Введите имя"),
-  phone: z.string().min(5, "Введите телефон").regex(phoneRegex, "Некорректный телефон"),
+  phone: z.string().min(1, "Введите телефон").regex(phoneRegex, "Введите телефон полностью"),
   email: z.string().email("Некорректный email").optional().or(z.literal("")),
   company: z.string().optional(),
   message: z.string().optional(),
@@ -28,7 +28,7 @@ export const dealerFormSchema = z.object({
 
 export const contactFormSchema = z.object({
   name: z.string().min(2, "Введите имя"),
-  phone: z.string().min(5, "Введите телефон").regex(phoneRegex, "Некорректный телефон"),
+  phone: z.string().min(1, "Введите телефон").regex(phoneRegex, "Введите телефон полностью"),
   email: z.string().email("Некорректный email").optional().or(z.literal("")),
   message: z.string().optional(),
   consent: consentField,
@@ -37,7 +37,8 @@ export const contactFormSchema = z.object({
 
 export const callbackFormSchema = z.object({
   name: z.string().min(2, "Введите имя"),
-  phone: z.string().min(5, "Введите телефон").regex(phoneRegex, "Некорректный телефон"),
+  phone: z.string().min(1, "Введите телефон").regex(phoneRegex, "Введите телефон полностью"),
+  message: z.string().optional(),
   consent: consentField,
   honeypot: z.string().max(0).optional(),
 });

@@ -1,11 +1,11 @@
 import { Metadata } from "next";
-import Image from "next/image";
 import { fetchStrapi, getStrapiMedia } from "@/lib/strapi";
 import { StrapiResponse, DocumentEntry } from "@/lib/types";
 import { Breadcrumbs } from "@/components/breadcrumbs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Download, FileText } from "lucide-react";
+import { ImageLightbox } from "./image-lightbox";
 
 export const metadata: Metadata = {
   title: "Документы",
@@ -42,7 +42,7 @@ export default async function DocumentsPage() {
         <section key={category} className="mt-8">
           <h2 className="mb-4 text-xl font-semibold">{category}</h2>
 
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
             {docs.map((doc) => {
               const previewUrl = doc.Preview_Image
                 ? getStrapiMedia(doc.Preview_Image.url)
@@ -52,17 +52,9 @@ export default async function DocumentsPage() {
                 : null;
 
               return (
-                <Card key={doc.id}>
+                <Card key={doc.id} className="flex flex-col">
                   {previewUrl ? (
-                    <div className="relative aspect-[4/3] overflow-hidden rounded-t-lg">
-                      <Image
-                        src={previewUrl}
-                        alt={doc.Title}
-                        fill
-                        className="object-cover"
-                        sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                      />
-                    </div>
+                    <ImageLightbox src={previewUrl} alt={doc.Title} />
                   ) : (
                     <div className="flex aspect-[4/3] items-center justify-center rounded-t-lg bg-muted">
                       <FileText className="h-12 w-12 text-muted-foreground" />
@@ -70,12 +62,12 @@ export default async function DocumentsPage() {
                   )}
 
                   <CardHeader className="pb-2">
-                    <CardTitle className="text-base">
+                    <CardTitle className="text-base font-normal">
                       {doc.Title}
                     </CardTitle>
                   </CardHeader>
 
-                  <CardContent>
+                  <CardContent className="mt-auto">
                     {fileUrl && (
                       <Button asChild variant="outline" size="sm" className="w-full">
                         <a href={fileUrl} download target="_blank" rel="noopener noreferrer">

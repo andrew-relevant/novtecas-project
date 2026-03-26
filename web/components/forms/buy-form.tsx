@@ -1,9 +1,10 @@
 "use client";
 
-import { useForm } from "react-hook-form";
+import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { PhoneInput } from "@/components/ui/phone-input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -25,10 +26,11 @@ export function BuyForm({ productTitle, onSuccess }: BuyFormProps) {
     setValue,
     watch,
     reset,
+    control,
     formState: { errors, isSubmitting },
   } = useForm<BuyFormData>({
     resolver: zodResolver(buyFormSchema),
-    defaultValues: { product: productTitle ?? "", consent: undefined },
+    defaultValues: { name: "", phone: "", product: productTitle ?? "", consent: false },
   });
 
   const consent = watch("consent");
@@ -68,7 +70,18 @@ export function BuyForm({ productTitle, onSuccess }: BuyFormProps) {
       </div>
       <div>
         <Label htmlFor="buy-phone">Телефон *</Label>
-        <Input id="buy-phone" type="tel" {...register("phone")} />
+        <Controller
+          name="phone"
+          control={control}
+          render={({ field }) => (
+            <PhoneInput
+              id="buy-phone"
+              value={field.value}
+              onChange={field.onChange}
+              onBlur={field.onBlur}
+            />
+          )}
+        />
         {errors.phone && <p className="mt-1 text-xs text-destructive">{errors.phone.message}</p>}
       </div>
       <div>
@@ -84,7 +97,7 @@ export function BuyForm({ productTitle, onSuccess }: BuyFormProps) {
         <Checkbox
           id="buy-consent"
           checked={consent === true}
-          onCheckedChange={(checked) => setValue("consent", checked === true ? true : (undefined as unknown as true))}
+          onCheckedChange={(checked) => setValue("consent", checked === true)}
         />
         <Label htmlFor="buy-consent" className="text-xs leading-tight">
           Согласен на{" "}
