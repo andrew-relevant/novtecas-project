@@ -69,6 +69,8 @@ services:
     build:
       context: ./web
       dockerfile: Dockerfile.prod
+      args:
+        STRAPI_INTERNAL_URL: ${STRAPI_INTERNAL_URL:-http://cms:1337}
     restart: always
     env_file: .env
     environment:
