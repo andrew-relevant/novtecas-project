@@ -1,0 +1,18 @@
+{
+  "collectionName": "components_shared_advantages",
+  "info": {
+    "displayName": "Advantage",
+    "icon": "star",
+    "description": "Преимущество компании"
+  },
+  "options": {},
+  "attributes": {
+    "title": {
+      "type": "string",
+      "required": true
+    },
+    "iconKey": {
+      "type": "string"
+    }
+  }
+}

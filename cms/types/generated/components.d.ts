@@ -1,5 +1,32 @@
 import type { Schema, Struct } from '@strapi/strapi';
 
+export interface SharedAdvantage extends Struct.ComponentSchema {
+  collectionName: 'components_shared_advantages';
+  info: {
+    description: '\u041F\u0440\u0435\u0438\u043C\u0443\u0449\u0435\u0441\u0442\u0432\u043E \u043A\u043E\u043C\u043F\u0430\u043D\u0438\u0438';
+    displayName: 'Advantage';
+    icon: 'star';
+  };
+  attributes: {
+    iconKey: Schema.Attribute.String;
+    title: Schema.Attribute.String & Schema.Attribute.Required;
+  };
+}
+
+export interface SharedApplicationArea extends Struct.ComponentSchema {
+  collectionName: 'components_shared_application_areas';
+  info: {
+    description: '\u041E\u0431\u043B\u0430\u0441\u0442\u044C \u043F\u0440\u0438\u043C\u0435\u043D\u0435\u043D\u0438\u044F';
+    displayName: 'ApplicationArea';
+    icon: 'layer';
+  };
+  attributes: {
+    description: Schema.Attribute.Text;
+    image: Schema.Attribute.Media<'images'>;
+    title: Schema.Attribute.String & Schema.Attribute.Required;
+  };
+}
+
 export interface SharedContactInfo extends Struct.ComponentSchema {
   collectionName: 'components_shared_contact_infos';
   info: {
@@ -46,6 +73,8 @@ export interface SharedSeo extends Struct.ComponentSchema {
 declare module '@strapi/strapi' {
   export module Public {
     export interface ComponentSchemas {
+      'shared.advantage': SharedAdvantage;
+      'shared.application-area': SharedApplicationArea;
       'shared.contact-info': SharedContactInfo;
       'shared.price-tier': SharedPriceTier;
       'shared.seo': SharedSeo;

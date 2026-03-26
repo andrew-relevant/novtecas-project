@@ -1,7 +1,8 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
-import { useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Menu, Phone, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -63,16 +64,46 @@ export function SiteHeader({
   onOpenCallbackModal,
 }: SiteHeaderProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [visible, setVisible] = useState(true);
+  const lastScrollY = useRef(0);
+
+  const handleScroll = useCallback(() => {
+    const currentY = window.scrollY;
+    if (currentY <= 0) {
+      setVisible(true);
+    } else if (currentY > lastScrollY.current) {
+      setVisible(false);
+    } else {
+      setVisible(true);
+    }
+    lastScrollY.current = currentY;
+  }, []);
+
+  useEffect(() => {
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, [handleScroll]);
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="container flex h-16 items-center justify-between gap-4">
-        <Link href="/" className="flex items-center gap-2">
-          <span className="text-xl font-bold tracking-tight">НОВТЕКАС</span>
+    <header
+      className={`sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur transition-transform duration-300 supports-[backdrop-filter]:bg-background/60 ${
+        visible ? "translate-y-0" : "-translate-y-full"
+      }`}
+    >
+      <div className="container flex h-20 items-center justify-between gap-4">
+        <Link href="/" className="flex shrink-0 items-center gap-2">
+          <Image
+            src="/logo.svg"
+            alt="Новтекас"
+            width={240}
+            height={64}
+            className="h-14 w-auto -translate-y-2 dark:invert"
+            priority
+          />
         </Link>
 
         {/* Desktop nav */}
-        <NavigationMenu className="hidden lg:flex">
+        <NavigationMenu className="hidden xl:flex">
           <NavigationMenuList>
             {NAV_ITEMS.map((item) =>
               item.children ? (
@@ -113,25 +144,22 @@ export function SiteHeader({
           </NavigationMenuList>
         </NavigationMenu>
 
-        <div className="hidden items-center gap-3 lg:flex">
+        <div className="hidden shrink-0 items-center gap-3 xl:flex">
           <a
             href="tel:88007070471"
-            className="flex items-center gap-1.5 text-sm font-medium"
+            className="flex shrink-0 items-center gap-1.5 whitespace-nowrap text-sm font-medium"
           >
             <Phone className="h-4 w-4" />
             8 (800) 707-04-71
           </a>
-          <Button size="sm" onClick={onOpenCallbackModal} variant="outline">
+          <Button size="sm" onClick={onOpenCallbackModal}>
             Заказать звонок
-          </Button>
-          <Button size="sm" onClick={onOpenContactModal}>
-            Заказать
           </Button>
         </div>
 
         {/* Mobile nav */}
         <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
-          <SheetTrigger asChild className="lg:hidden">
+          <SheetTrigger asChild className="xl:hidden">
             <Button variant="ghost" size="icon">
               <Menu className="h-5 w-5" />
               <span className="sr-only">Меню</span>
@@ -177,22 +205,12 @@ export function SiteHeader({
               <div className="flex flex-col gap-2 pt-4">
                 <Button
                   size="sm"
-                  variant="outline"
                   onClick={() => {
                     setMobileOpen(false);
                     onOpenCallbackModal?.();
                   }}
                 >
                   Заказать звонок
-                </Button>
-                <Button
-                  size="sm"
-                  onClick={() => {
-                    setMobileOpen(false);
-                    onOpenContactModal?.();
-                  }}
-                >
-                  Заказать
                 </Button>
               </div>
             </div>

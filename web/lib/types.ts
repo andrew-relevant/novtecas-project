@@ -221,6 +221,42 @@ export interface SiteSettings {
   logo: StrapiMediaItem | null;
   contacts: ContactInfo | null;
   copyright: string | null;
+}
+
+export interface Advantage {
+  id: number;
+  title: string;
+  iconKey: string | null;
+}
+
+export interface ApplicationArea {
+  id: number;
+  title: string;
+  description: string | null;
+  image: StrapiMediaItem | null;
+}
+
+export interface HomePage {
+  id: number;
+  documentId: string;
+  heroTitle: string | null;
+  heroSubtitle: string | null;
   heroVideo: StrapiMediaItem | null;
   heroPoster: StrapiMediaItem | null;
+  aboutTitle: string | null;
+  aboutText: string | null;
+  aboutCtaLabel: string | null;
+  aboutCtaHref: string | null;
+  advantagesTitle: string | null;
+  advantages: Advantage[];
+  applicationAreasTitle: string | null;
+  applicationAreas: ApplicationArea[];
+  productsTitle: string | null;
+  productsSubtitle: string | null;
+  productsCtaLabel: string | null;
+  productsCtaHref: string | null;
+  dealersTitle: string | null;
+  dealersText: string | null;
+  dealersPhone: string | null;
+  dealersCtaLabel: string | null;
 }

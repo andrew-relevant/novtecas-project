@@ -1,0 +1,86 @@
+{
+  "kind": "singleType",
+  "collectionName": "home_pages",
+  "info": {
+    "singularName": "home-page",
+    "pluralName": "home-pages",
+    "displayName": "HomePage",
+    "description": "Главная страница"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "heroTitle": {
+      "type": "string"
+    },
+    "heroSubtitle": {
+      "type": "richtext"
+    },
+    "heroVideo": {
+      "type": "media",
+      "multiple": false,
+      "required": false,
+      "allowedTypes": ["videos"]
+    },
+    "heroPoster": {
+      "type": "media",
+      "multiple": false,
+      "required": false,
+      "allowedTypes": ["images"]
+    },
+    "aboutTitle": {
+      "type": "string"
+    },
+    "aboutText": {
+      "type": "richtext"
+    },
+    "aboutCtaLabel": {
+      "type": "string"
+    },
+    "aboutCtaHref": {
+      "type": "string"
+    },
+    "advantagesTitle": {
+      "type": "string"
+    },
+    "advantages": {
+      "type": "component",
+      "repeatable": true,
+      "component": "shared.advantage"
+    },
+    "applicationAreasTitle": {
+      "type": "string"
+    },
+    "applicationAreas": {
+      "type": "component",
+      "repeatable": true,
+      "component": "shared.application-area"
+    },
+    "productsTitle": {
+      "type": "string"
+    },
+    "productsSubtitle": {
+      "type": "richtext"
+    },
+    "productsCtaLabel": {
+      "type": "string"
+    },
+    "productsCtaHref": {
+      "type": "string"
+    },
+    "dealersTitle": {
+      "type": "string"
+    },
+    "dealersText": {
+      "type": "richtext"
+    },
+    "dealersPhone": {
+      "type": "string"
+    },
+    "dealersCtaLabel": {
+      "type": "string"
+    }
+  }
+}

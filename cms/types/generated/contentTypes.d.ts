@@ -498,6 +498,57 @@ export interface ApiDocumentDocument extends Struct.CollectionTypeSchema {
   };
 }
 
+export interface ApiHomePageHomePage extends Struct.SingleTypeSchema {
+  collectionName: 'home_pages';
+  info: {
+    description: '\u0413\u043B\u0430\u0432\u043D\u0430\u044F \u0441\u0442\u0440\u0430\u043D\u0438\u0446\u0430';
+    displayName: 'HomePage';
+    pluralName: 'home-pages';
+    singularName: 'home-page';
+  };
+  options: {
+    draftAndPublish: false;
+  };
+  attributes: {
+    aboutCtaHref: Schema.Attribute.String;
+    aboutCtaLabel: Schema.Attribute.String;
+    aboutText: Schema.Attribute.RichText;
+    aboutTitle: Schema.Attribute.String;
+    advantages: Schema.Attribute.Component<'shared.advantage', true>;
+    advantagesTitle: Schema.Attribute.String;
+    applicationAreas: Schema.Attribute.Component<
+      'shared.application-area',
+      true
+    >;
+    applicationAreasTitle: Schema.Attribute.String;
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    dealersCtaLabel: Schema.Attribute.String;
+    dealersPhone: Schema.Attribute.String;
+    dealersText: Schema.Attribute.RichText;
+    dealersTitle: Schema.Attribute.String;
+    heroPoster: Schema.Attribute.Media<'images'>;
+    heroSubtitle: Schema.Attribute.RichText;
+    heroTitle: Schema.Attribute.String;
+    heroVideo: Schema.Attribute.Media<'videos'>;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::home-page.home-page'
+    > &
+      Schema.Attribute.Private;
+    productsCtaHref: Schema.Attribute.String;
+    productsCtaLabel: Schema.Attribute.String;
+    productsSubtitle: Schema.Attribute.RichText;
+    productsTitle: Schema.Attribute.String;
+    publishedAt: Schema.Attribute.DateTime;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+  };
+}
+
 export interface ApiLeadLead extends Struct.CollectionTypeSchema {
   collectionName: 'leads';
   info: {
@@ -596,6 +647,7 @@ export interface ApiPageAboutPageAbout extends Struct.SingleTypeSchema {
       Schema.Attribute.Private;
     publishedAt: Schema.Attribute.DateTime;
     Requisites_Table: Schema.Attribute.JSON;
+    sa: Schema.Attribute.Enumeration<['as']>;
     Sidebar_Image: Schema.Attribute.Media<'images'>;
     updatedAt: Schema.Attribute.DateTime;
     updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
@@ -966,8 +1018,6 @@ export interface ApiSiteSettingSiteSetting extends Struct.SingleTypeSchema {
     createdAt: Schema.Attribute.DateTime;
     createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
-    heroPoster: Schema.Attribute.Media<'images'>;
-    heroVideo: Schema.Attribute.Media<'videos'>;
     locale: Schema.Attribute.String & Schema.Attribute.Private;
     localizations: Schema.Attribute.Relation<
       'oneToMany',
@@ -1495,6 +1545,7 @@ declare module '@strapi/strapi' {
       'admin::user': AdminUser;
       'api::dealer.dealer': ApiDealerDealer;
       'api::document.document': ApiDocumentDocument;
+      'api::home-page.home-page': ApiHomePageHomePage;
       'api::lead.lead': ApiLeadLead;
       'api::media-item.media-item': ApiMediaItemMediaItem;
       'api::page-about.page-about': ApiPageAboutPageAbout;

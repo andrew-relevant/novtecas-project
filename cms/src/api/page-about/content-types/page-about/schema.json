@@ -22,10 +22,18 @@
       "type": "media",
       "multiple": false,
       "required": false,
-      "allowedTypes": ["images"]
+      "allowedTypes": [
+        "images"
+      ]
     },
     "Requisites_Table": {
       "type": "json"
+    },
+    "sa": {
+      "type": "enumeration",
+      "enum": [
+        "as"
+      ]
     }
   }
 }

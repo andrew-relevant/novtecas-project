@@ -26,18 +26,6 @@
     "copyright": {
       "type": "string",
       "default": "Новтекас. Все права защищены."
-    },
-    "heroVideo": {
-      "type": "media",
-      "multiple": false,
-      "required": false,
-      "allowedTypes": ["videos"]
-    },
-    "heroPoster": {
-      "type": "media",
-      "multiple": false,
-      "required": false,
-      "allowedTypes": ["images"]
     }
   }
 }

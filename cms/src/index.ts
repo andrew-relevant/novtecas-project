@@ -79,6 +79,7 @@ async function ensurePublicPermissions(strapi) {
     "api::review.review.find",
     "api::review.review.findOne",
     "api::site-setting.site-setting.find",
+    "api::home-page.home-page.find",
     "api::page-about.page-about.find",
     "api::page-production.page-production.find",
     "api::page-blacklist.page-blacklist.find",
@@ -429,6 +430,60 @@ export default {
       status: "published",
     });
 
+    // --- Home Page ---
+    const applicationAreasData = [
+      { title: "Ремонт дорожных ям", description: "Асфальт с использованием концентрата – отличный выбор при необходимости отремонтировать выбоины и ямы на любых типах дорог в кратчайшие сроки.", imageFile: "area-1.jpg" },
+      { title: "Ликвидация колейности", description: "Асфальт марки Perma Patch используют федеральные и региональные органы, а также частные компании для решения проблемы колейности.", imageFile: "area-2.jpg" },
+      { title: "Укрытие коммуникаций", description: "Асфальт Perma Patch хорошо подойдет, если нужно покрыть коммуникационные каналы на дорогах.", imageFile: "area-3.jpg" },
+      { title: "Укладка стоков", description: "Для укладки зон вокруг люков и водоотводов перманентно используется холодный асфальт.", imageFile: "area-4.jpg" },
+      { title: "Ремонт аэропортов и ВПП", description: "Холодный асфальт – наиболее быстрый и бюджетный способ в любое время года вернуть функциональность взлетно-посадочным полосам и стоянкам бортов, а также отремонтировать пути к аэропорту.", imageFile: "area-5.jpg" },
+      { title: "Защита крыш", description: "На плоских крышах нежилых помещений холодный асфальт используется как дополнительный слой, защищающий от негативного воздействия воды и снега.", imageFile: "area-6.jpg" },
+      { title: "Обновление переездов", description: "Данный тип концентрата подходит для экстренного и долговечного ремонта ж/д переездов любой степени поврежденности.", imageFile: "area-7.jpg" },
+      { title: "Защитный слой в нефтехранилищах", description: "Perma Patch может быть использован в качестве изолирующего материала для резервуаров и хранилищ нефтепродуктов в терминалах.", imageFile: "area-8.jpg" },
+      { title: "Асфальтирование дорожного полотна", description: "Холодный асфальт данной марки подходит для основного покрытия дорожных полотен 2 и 3 категории.", imageFile: "area-9.jpg" },
+      { title: "Асфальтирование при низких температурах", description: "Покрытие способно уплотняться даже при -27°С, сохраняя подвижность и качество материала.", imageFile: "area-10.jpg" },
+    ];
+
+    const applicationAreas: { title: string; description: string; image?: number }[] = [];
+    for (const area of applicationAreasData) {
+      const imageId = await uploadSeedFile(strapi, area.imageFile, area.title);
+      applicationAreas.push({
+        title: area.title,
+        description: area.description,
+        ...(imageId ? { image: imageId } : {}),
+      });
+    }
+
+    await strapi.documents("api::home-page.home-page").create({
+      data: {
+        heroTitle: "Производство и продажа\nдорожных покрытий",
+        heroSubtitle: "<p>Холодный асфальт в мешках от производителя</p>",
+        aboutTitle: "О компании",
+        aboutText: "<p><strong>«Новые Технологии Асфальта – NovTecAs»</strong> специализируется на реализации холодного асфальта для ремонта дорожных покрытий.</p><p class=\"mt-4\">В основе продукта — концентрат <strong>Perma Patch</strong> от <strong>McAsphalt Industries Limited (Канада)</strong>, который зарекомендовал себя как эффективное решение для быстрого и удобного ямочного ремонта</p>.",
+        aboutCtaLabel: "Подробнее о компании",
+        aboutCtaHref: "/company/about",
+        advantagesTitle: "Преимущества компании",
+        advantages: [
+          { title: "Собственное производство", iconKey: "Factory" },
+          { title: "Собственные склады", iconKey: "Warehouse" },
+          { title: "Точная дозация компонентов", iconKey: "Target" },
+          { title: "Канадская технология Perma Patch", iconKey: "MapleLeaf" },
+          { title: "Полная сертификация продукции", iconKey: "FileCheck" },
+          { title: "Доставка по всей России (авто и ж/д)", iconKey: "Truck" },
+        ],
+        applicationAreasTitle: "Области применения холодного асфальта",
+        applicationAreas,
+        productsTitle: "Продукция",
+        productsSubtitle: "<p>Холодный и сухой асфальт от производителя — высокое качество, точная дозация компонентов, доставка по всей России</p>",
+        productsCtaLabel: "Вся продукция",
+        productsCtaHref: "/products",
+        dealersTitle: "Ищем дилеров",
+        dealersText: "<p>Приглашаем к сотрудничеству дилеров по всей России. Выгодные условия, маркетинговая поддержка, обучение.</p>",
+        dealersPhone: "8 (800) 707-04-71",
+        dealersCtaLabel: "Подать заявку на дилерство",
+      },
+    });
+
     // --- Site Settings ---
     await strapi.documents("api::site-setting.site-setting").create({
       data: {
@@ -451,6 +506,7 @@ export default {
     strapi.log.info(`  - ${portfolioData.length} portfolio items`);
     strapi.log.info(`  - ${articlesData.length} media items`);
     strapi.log.info("  - Pages: About, Production, Blacklist, Contacts, Dealers, Privacy");
+    strapi.log.info("  - Home Page");
     strapi.log.info("  - Site Settings");
   },
 };

@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import { Phone, Mail, MapPin } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
@@ -17,8 +18,14 @@ export function SiteFooter() {
       <div className="container py-10">
         <div className="grid gap-8 md:grid-cols-3">
           <div>
-            <Link href="/" className="text-xl font-bold tracking-tight">
-              НОВТЕКАС
+            <Link href="/" className="inline-block">
+              <Image
+                src="/logo.svg"
+                alt="Новтекас"
+                width={200}
+                height={53}
+                className="h-12 w-auto dark:invert"
+              />
             </Link>
             <p className="mt-3 text-sm text-muted-foreground">
               Производство и продажа дорожных покрытий. Холодный асфальт в мешках
