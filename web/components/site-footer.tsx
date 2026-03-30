@@ -22,9 +22,9 @@ export function SiteFooter() {
               <Image
                 src="/logo.svg"
                 alt="Новтекас"
-                width={200}
-                height={53}
-                className="h-12 w-auto dark:invert"
+                width={400}
+                height={130}
+                className="h-16 w-auto"
               />
             </Link>
             <p className="mt-3 text-sm text-muted-foreground">

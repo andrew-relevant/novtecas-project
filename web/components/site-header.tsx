@@ -95,9 +95,9 @@ export function SiteHeader({
           <Image
             src="/logo.svg"
             alt="Новтекас"
-            width={240}
-            height={64}
-            className="h-14 w-auto -translate-y-2 dark:invert"
+            width={480}
+            height={156}
+            className="h-20 w-auto -translate-y-1"
             priority
           />
         </Link>
