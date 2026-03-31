@@ -15,6 +15,9 @@
     "Intro_Text": {
       "type": "text"
     },
+    "Full_Text": {
+      "type": "richtext"
+    },
     "Gallery": {
       "type": "media",
       "multiple": true,

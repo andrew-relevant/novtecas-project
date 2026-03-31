@@ -33,8 +33,8 @@ export default async function PortfolioPage() {
             const imageUrl = getStrapiMedia(Image_Preview?.url ?? null);
 
             return (
-              <Link key={item.id} href={`/portfolio/${Slug}`}>
-                <Card className="group overflow-hidden transition-shadow hover:shadow-lg">
+              <Link key={item.id} href={`/portfolio/${Slug}`} className="h-full">
+                <Card className="group flex h-full flex-col overflow-hidden transition-shadow hover:shadow-lg">
                   <div className="relative aspect-[16/9] overflow-hidden bg-muted">
                     {imageUrl ? (
                       <Image
@@ -50,7 +50,7 @@ export default async function PortfolioPage() {
                       </div>
                     )}
                   </div>
-                  <CardContent className="p-4">
+                  <CardContent className="flex flex-1 flex-col p-4">
                     {date && (
                       <p className="text-xs text-muted-foreground">
                         {new Date(date).toLocaleDateString("ru-RU", {

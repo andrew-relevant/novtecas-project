@@ -1,0 +1,24 @@
+{
+  "collectionName": "components_shared_video_embeds",
+  "info": {
+    "displayName": "VideoEmbed",
+    "icon": "play",
+    "description": "Встроенное видео с YouTube или RuTube"
+  },
+  "options": {},
+  "attributes": {
+    "title": {
+      "type": "string"
+    },
+    "url": {
+      "type": "string",
+      "required": true
+    },
+    "platform": {
+      "type": "enumeration",
+      "enum": ["youtube", "rutube"],
+      "required": true,
+      "default": "youtube"
+    }
+  }
+}

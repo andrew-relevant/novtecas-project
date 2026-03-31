@@ -1,0 +1,19 @@
+{
+  "kind": "singleType",
+  "collectionName": "page_technologies",
+  "info": {
+    "singularName": "page-technology",
+    "pluralName": "page-technologies",
+    "displayName": "PageTechnology",
+    "description": "Страница «Технология укладки»"
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "Full_Text": {
+      "type": "richtext"
+    }
+  }
+}

@@ -14,7 +14,7 @@ const FOOTER_NAV = [
 
 export function SiteFooter() {
   return (
-    <footer className="border-t bg-muted/40">
+    <footer className="border-t bg-secondary">
       <div className="container py-10">
         <div className="grid gap-8 md:grid-cols-3">
           <div>

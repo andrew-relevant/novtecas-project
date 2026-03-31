@@ -39,7 +39,8 @@ export default async function DealersPage() {
       phone: d.Phone,
       coordinates: d.Coordinates,
       contactInfo: d.Contact_Info,
-    }));
+    }))
+    .sort((a, b) => (a.city ?? "").localeCompare(b.city ?? "", "ru"));
 
   const introText = pageRes.data.Intro_Text;
 

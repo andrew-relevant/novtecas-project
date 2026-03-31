@@ -2,10 +2,17 @@
 
 import { useState } from "react";
 import Image from "next/image";
-import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { getStrapiMedia } from "@/lib/strapi";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselPrevious,
+  CarouselNext,
+} from "@/components/ui/carousel";
 
 interface GalleryItem {
   url: string;
@@ -30,27 +37,60 @@ export function Gallery({ items }: GalleryProps) {
 
   return (
     <>
-      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4">
-        {items.map((item, index) => {
-          const src = getStrapiMedia(item.url);
-          if (!src) return null;
-          return (
-            <button
-              key={index}
-              className="group relative aspect-[4/3] overflow-hidden rounded-lg bg-muted"
-              onClick={() => setActiveIndex(index)}
-            >
-              <Image
-                src={src}
-                alt={item.alt}
-                fill
-                className="object-cover transition-transform group-hover:scale-105"
-                sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, 25vw"
-              />
-            </button>
-          );
-        })}
-      </div>
+      {items.length === 1 ? (
+        <div className="grid grid-cols-1">
+          {(() => {
+            const src = getStrapiMedia(items[0].url);
+            if (!src) return null;
+            return (
+              <button
+                className="group relative aspect-[4/3] overflow-hidden rounded-lg bg-muted"
+                onClick={() => setActiveIndex(0)}
+              >
+                <Image
+                  src={src}
+                  alt={items[0].alt}
+                  fill
+                  className="object-cover transition-transform group-hover:scale-105"
+                  sizes="100vw"
+                />
+              </button>
+            );
+          })()}
+        </div>
+      ) : (
+        <div className="mx-auto max-w-[calc(100%-6rem)]">
+          <Carousel opts={{ align: "start", loop: true }} className="w-full">
+            <CarouselContent>
+              {items.map((item, index) => {
+                const src = getStrapiMedia(item.url);
+                if (!src) return null;
+                return (
+                  <CarouselItem
+                    key={index}
+                    className="md:basis-1/2 lg:basis-1/3"
+                  >
+                    <button
+                      className="group relative aspect-[4/3] w-full overflow-hidden rounded-lg bg-muted"
+                      onClick={() => setActiveIndex(index)}
+                    >
+                      <Image
+                        src={src}
+                        alt={item.alt}
+                        fill
+                        className="object-cover transition-transform group-hover:scale-105"
+                        sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                      />
+                    </button>
+                  </CarouselItem>
+                );
+              })}
+            </CarouselContent>
+            <CarouselPrevious />
+            <CarouselNext />
+          </Carousel>
+        </div>
+      )}
 
       <Dialog
         open={activeIndex !== null}

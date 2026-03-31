@@ -41,6 +41,11 @@
       "multiple": true,
       "required": false,
       "allowedTypes": ["images"]
+    },
+    "Videos": {
+      "type": "component",
+      "repeatable": true,
+      "component": "shared.video-embed"
     }
   }
 }

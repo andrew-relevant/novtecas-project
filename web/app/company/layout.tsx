@@ -10,14 +10,30 @@ import {
   Handshake,
   ShieldAlert,
 } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 
-const SIDEBAR_LINKS = [
+interface SidebarLink {
+  href: string;
+  label: string;
+  icon: LucideIcon;
+  children?: { href: string; label: string }[];
+}
+
+const SIDEBAR_LINKS: SidebarLink[] = [
   { href: "/company/about", label: "О компании", icon: Building2 },
-  { href: "/company/production", label: "Производство", icon: Factory },
+  {
+    href: "/company/production",
+    label: "Производство",
+    icon: Factory,
+    children: [
+      { href: "/company/production/technology", label: "Технология укладки" },
+      { href: "/company/production/hydrophobic", label: "Гидрофобный слой" },
+    ],
+  },
   { href: "/company/documents", label: "Документы", icon: FileText },
   { href: "/company/partners", label: "Партнёры", icon: Handshake },
   { href: "/company/blacklist", label: "Чёрный список", icon: ShieldAlert },
-] as const;
+];
 
 export default function CompanyLayout({
   children,
@@ -31,41 +47,77 @@ export default function CompanyLayout({
       <div className="flex flex-col gap-8 md:flex-row">
         <aside className="hidden w-60 shrink-0 md:block">
           <nav className="sticky top-24 space-y-1">
-            {SIDEBAR_LINKS.map(({ href, label, icon: Icon }) => {
+            {SIDEBAR_LINKS.map(({ href, label, icon: Icon, children: sub }) => {
               const isActive = pathname === href;
+              const isParentActive = pathname.startsWith(href);
               return (
-                <Link
-                  key={href}
-                  href={href}
-                  className={cn(
-                    "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground",
-                    isActive && "bg-accent text-accent-foreground",
+                <div key={href}>
+                  <Link
+                    href={href}
+                    className={cn(
+                      "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground",
+                      isActive && "bg-accent text-accent-foreground",
+                    )}
+                  >
+                    <Icon className="h-4 w-4 shrink-0" />
+                    {label}
+                  </Link>
+                  {sub && isParentActive && (
+                    <div className="ml-7 mt-1 space-y-1 border-l pl-3">
+                      {sub.map((child) => (
+                        <Link
+                          key={child.href}
+                          href={child.href}
+                          className={cn(
+                            "block rounded-md px-3 py-1.5 text-sm transition-colors hover:bg-accent hover:text-accent-foreground",
+                            pathname === child.href
+                              ? "bg-accent text-accent-foreground font-medium"
+                              : "text-muted-foreground",
+                          )}
+                        >
+                          {child.label}
+                        </Link>
+                      ))}
+                    </div>
                   )}
-                >
-                  <Icon className="h-4 w-4 shrink-0" />
-                  {label}
-                </Link>
+                </div>
               );
             })}
           </nav>
         </aside>
 
         <div className="flex flex-wrap gap-2 md:hidden">
-          {SIDEBAR_LINKS.map(({ href, label, icon: Icon }) => {
-            const isActive = pathname === href;
-            return (
+          {SIDEBAR_LINKS.flatMap(({ href, label, icon: Icon, children: sub }) => {
+            const items = [
               <Link
                 key={href}
                 href={href}
                 className={cn(
                   "inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors hover:bg-accent",
-                  isActive && "border-primary bg-primary/10 text-primary",
+                  pathname === href && "border-primary bg-primary/10 text-primary",
                 )}
               >
                 <Icon className="h-3.5 w-3.5" />
                 {label}
-              </Link>
-            );
+              </Link>,
+            ];
+            if (sub) {
+              for (const child of sub) {
+                items.push(
+                  <Link
+                    key={child.href}
+                    href={child.href}
+                    className={cn(
+                      "inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors hover:bg-accent",
+                      pathname === child.href && "border-primary bg-primary/10 text-primary",
+                    )}
+                  >
+                    {child.label}
+                  </Link>,
+                );
+              }
+            }
+            return items;
           })}
         </div>
 

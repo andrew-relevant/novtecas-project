@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { Breadcrumbs } from "@/components/breadcrumbs";
 import { RichText } from "@/components/rich-text";
 import { Gallery } from "@/components/gallery";
+import { VideoGallery } from "@/components/video-embed";
 import { fetchStrapi } from "@/lib/strapi";
 import type { StrapiResponse, PortfolioItem } from "@/lib/types";
 
@@ -45,7 +46,7 @@ export default async function PortfolioItemPage({
   const item = await getPortfolioItem(slug);
   if (!item) notFound();
 
-  const { Title, Date: date, Full_Text, Gallery: gallery } = item;
+  const { Title, Date: date, Full_Text, Gallery: gallery, Videos: videos } = item;
 
   const galleryItems = (gallery ?? []).map((g) => ({
     url: g.url,
@@ -54,11 +55,13 @@ export default async function PortfolioItemPage({
     height: g.height,
   }));
 
+  const videoItems = videos ?? [];
+
   return (
     <div className="container mx-auto px-4 py-8">
       <Breadcrumbs currentTitle={Title} />
 
-      <article className="mx-auto max-w-3xl">
+      <article>
         <h1 className="text-3xl font-bold">{Title}</h1>
         {date && (
           <p className="mt-2 text-sm text-muted-foreground">
@@ -70,15 +73,21 @@ export default async function PortfolioItemPage({
           </p>
         )}
 
-        {galleryItems.length > 0 && (
-          <div className="mt-6">
-            <Gallery items={galleryItems} />
-          </div>
-        )}
-
         {Full_Text && (
           <div className="mt-8">
             <RichText content={Full_Text} />
+          </div>
+        )}
+
+        {videoItems.length > 0 && (
+          <div className="mt-6">
+            <VideoGallery videos={videoItems} />
+          </div>
+        )}
+
+        {galleryItems.length > 0 && (
+          <div className="mt-6">
+            <Gallery items={galleryItems} />
           </div>
         )}
       </article>

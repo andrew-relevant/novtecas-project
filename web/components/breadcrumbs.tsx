@@ -17,6 +17,8 @@ const SEGMENT_LABELS: Record<string, string> = {
   company: "Компания",
   about: "О компании",
   production: "Производство",
+  technology: "Технология укладки",
+  hydrophobic: "Гидрофобный слой",
   documents: "Документы",
   partners: "Партнёры",
   blacklist: "Чёрный список",

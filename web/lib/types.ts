@@ -48,6 +48,13 @@ export interface SEOComponent {
   ogImage: StrapiMediaItem | null;
 }
 
+export interface VideoEmbed {
+  id: number;
+  title: string | null;
+  url: string;
+  platform: "youtube" | "rutube";
+}
+
 // --- Content Types (Strapi 5: flat, no data.attributes wrapper) ---
 
 export interface Product {
@@ -120,6 +127,7 @@ export interface PortfolioItem {
   Full_Text: string | null;
   Image_Preview: StrapiMediaItem | null;
   Gallery: StrapiMediaItem[];
+  Videos: VideoEmbed[];
   publishedAt: string;
 }
 
@@ -194,7 +202,20 @@ export interface PageProduction {
   id: number;
   documentId: string;
   Intro_Text: string | null;
+  Full_Text: string | null;
   Gallery: StrapiMediaItem[];
+}
+
+export interface PageTechnology {
+  id: number;
+  documentId: string;
+  Full_Text: string | null;
+}
+
+export interface PageHydrophobic {
+  id: number;
+  documentId: string;
+  Full_Text: string | null;
 }
 
 export interface PageBlacklist {

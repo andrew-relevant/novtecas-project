@@ -743,6 +743,36 @@ export interface ApiPageDealersPageDealers extends Struct.SingleTypeSchema {
   };
 }
 
+export interface ApiPageHydrophobicPageHydrophobic
+  extends Struct.SingleTypeSchema {
+  collectionName: 'page_hydrophobics';
+  info: {
+    description: '\u0421\u0442\u0440\u0430\u043D\u0438\u0446\u0430 \u00AB\u0413\u0438\u0434\u0440\u043E\u0444\u043E\u0431\u043D\u044B\u0439 \u0441\u043B\u043E\u0439\u00BB';
+    displayName: 'PageHydrophobic';
+    pluralName: 'page-hydrophobics';
+    singularName: 'page-hydrophobic';
+  };
+  options: {
+    draftAndPublish: true;
+  };
+  attributes: {
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    Full_Text: Schema.Attribute.RichText;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::page-hydrophobic.page-hydrophobic'
+    > &
+      Schema.Attribute.Private;
+    publishedAt: Schema.Attribute.DateTime;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+  };
+}
+
 export interface ApiPageProductionPageProduction
   extends Struct.SingleTypeSchema {
   collectionName: 'page_productions';
@@ -759,12 +789,43 @@ export interface ApiPageProductionPageProduction
     createdAt: Schema.Attribute.DateTime;
     createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
+    Full_Text: Schema.Attribute.RichText;
     Gallery: Schema.Attribute.Media<'images', true>;
     Intro_Text: Schema.Attribute.Text;
     locale: Schema.Attribute.String & Schema.Attribute.Private;
     localizations: Schema.Attribute.Relation<
       'oneToMany',
       'api::page-production.page-production'
+    > &
+      Schema.Attribute.Private;
+    publishedAt: Schema.Attribute.DateTime;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+  };
+}
+
+export interface ApiPageTechnologyPageTechnology
+  extends Struct.SingleTypeSchema {
+  collectionName: 'page_technologies';
+  info: {
+    description: '\u0421\u0442\u0440\u0430\u043D\u0438\u0446\u0430 \u00AB\u0422\u0435\u0445\u043D\u043E\u043B\u043E\u0433\u0438\u044F \u0443\u043A\u043B\u0430\u0434\u043A\u0438\u00BB';
+    displayName: 'PageTechnology';
+    pluralName: 'page-technologies';
+    singularName: 'page-technology';
+  };
+  options: {
+    draftAndPublish: true;
+  };
+  attributes: {
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    Full_Text: Schema.Attribute.RichText;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::page-technology.page-technology'
     > &
       Schema.Attribute.Private;
     publishedAt: Schema.Attribute.DateTime;
@@ -869,6 +930,7 @@ export interface ApiPortfolioItemPortfolioItem
     updatedAt: Schema.Attribute.DateTime;
     updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
+    Videos: Schema.Attribute.Component<'shared.video-embed', true>;
   };
 }
 
@@ -1553,7 +1615,9 @@ declare module '@strapi/strapi' {
       'api::page-blacklist.page-blacklist': ApiPageBlacklistPageBlacklist;
       'api::page-contacts.page-contacts': ApiPageContactsPageContacts;
       'api::page-dealers.page-dealers': ApiPageDealersPageDealers;
+      'api::page-hydrophobic.page-hydrophobic': ApiPageHydrophobicPageHydrophobic;
       'api::page-production.page-production': ApiPageProductionPageProduction;
+      'api::page-technology.page-technology': ApiPageTechnologyPageTechnology;
       'api::page.page': ApiPagePage;
       'api::partner.partner': ApiPartnerPartner;
       'api::portfolio-item.portfolio-item': ApiPortfolioItemPortfolioItem;

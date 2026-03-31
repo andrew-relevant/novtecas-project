@@ -1,0 +1,19 @@
+{
+  "kind": "singleType",
+  "collectionName": "page_hydrophobics",
+  "info": {
+    "singularName": "page-hydrophobic",
+    "pluralName": "page-hydrophobics",
+    "displayName": "PageHydrophobic",
+    "description": "Страница «Гидрофобный слой»"
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "Full_Text": {
+      "type": "richtext"
+    }
+  }
+}

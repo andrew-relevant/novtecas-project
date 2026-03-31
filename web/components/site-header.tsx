@@ -22,6 +22,8 @@ const NAV_ITEMS = [
     children: [
       { label: "О компании", href: "/company/about" },
       { label: "Производство", href: "/company/production" },
+      { label: "Технология укладки", href: "/company/production/technology", indent: true },
+      { label: "Гидрофобный слой", href: "/company/production/hydrophobic", indent: true },
       { label: "Документы", href: "/company/documents" },
       { label: "Наши партнёры", href: "/company/partners" },
       { label: "Чёрный список", href: "/company/blacklist" },
@@ -118,7 +120,9 @@ export function SiteHeader({
                           <NavigationMenuLink asChild>
                             <Link
                               href={child.href}
-                              className="block rounded-md px-3 py-2 text-sm hover:bg-accent"
+                              className={`block rounded-md px-3 py-2 text-sm hover:bg-accent ${
+                                child.indent ? "pl-6 text-muted-foreground" : ""
+                              }`}
                             >
                               {child.label}
                             </Link>
@@ -192,7 +196,9 @@ export function SiteHeader({
                             key={child.href}
                             href={child.href}
                             onClick={() => setMobileOpen(false)}
-                            className="block rounded-md px-3 py-1.5 text-sm text-muted-foreground hover:bg-accent hover:text-foreground"
+                            className={`block rounded-md px-3 py-1.5 text-sm text-muted-foreground hover:bg-accent hover:text-foreground ${
+                              child.indent ? "ml-4" : ""
+                            }`}
                           >
                             {child.label}
                           </Link>

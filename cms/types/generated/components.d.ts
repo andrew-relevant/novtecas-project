@@ -83,6 +83,22 @@ export interface SharedSeo extends Struct.ComponentSchema {
   };
 }
 
+export interface SharedVideoEmbed extends Struct.ComponentSchema {
+  collectionName: 'components_shared_video_embeds';
+  info: {
+    description: '\u0412\u0441\u0442\u0440\u043E\u0435\u043D\u043D\u043E\u0435 \u0432\u0438\u0434\u0435\u043E \u0441 YouTube \u0438\u043B\u0438 RuTube';
+    displayName: 'VideoEmbed';
+    icon: 'play';
+  };
+  attributes: {
+    platform: Schema.Attribute.Enumeration<['youtube', 'rutube']> &
+      Schema.Attribute.Required &
+      Schema.Attribute.DefaultTo<'youtube'>;
+    title: Schema.Attribute.String;
+    url: Schema.Attribute.String & Schema.Attribute.Required;
+  };
+}
+
 declare module '@strapi/strapi' {
   export module Public {
     export interface ComponentSchemas {
@@ -92,6 +108,7 @@ declare module '@strapi/strapi' {
       'shared.department': SharedDepartment;
       'shared.price-tier': SharedPriceTier;
       'shared.seo': SharedSeo;
+      'shared.video-embed': SharedVideoEmbed;
     }
   }
 }
