@@ -17,7 +17,7 @@ export function ProductCard({ product, onBuyClick }: ProductCardProps) {
   const imageUrl = getStrapiMedia(img?.url ?? null);
 
   return (
-    <Card className="group overflow-hidden transition-shadow hover:shadow-lg">
+    <Card className="group flex h-full flex-col overflow-hidden transition-shadow hover:shadow-lg">
       <Link href={`/products/${Slug}`} className="block">
         <div className="relative aspect-[4/3] overflow-hidden bg-muted">
           {imageUrl ? (
@@ -36,7 +36,7 @@ export function ProductCard({ product, onBuyClick }: ProductCardProps) {
 
         </div>
       </Link>
-      <CardContent className="p-4">
+      <CardContent className="flex flex-1 flex-col p-4">
         <Link href={`/products/${Slug}`}>
           <h3 className="line-clamp-2 font-semibold hover:text-primary">
             {Title}
@@ -47,7 +47,7 @@ export function ProductCard({ product, onBuyClick }: ProductCardProps) {
             {Short_Description}
           </p>
         )}
-        <div className="mt-3 flex items-center justify-between gap-2">
+        <div className="mt-auto flex items-center justify-between gap-2 pt-3">
           <div className="text-sm font-medium">
             {Price_Rub ? (
               <>

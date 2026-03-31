@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ModalForm } from "@/components/modal-form";
 import { DealerForm } from "@/components/forms/dealer-form";
-import { MapPin, Phone } from "lucide-react";
+import { Mail, MapPin, Phone } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface Dealer {
@@ -14,6 +14,7 @@ interface Dealer {
   city: string | null;
   address: string | null;
   phone: string | null;
+  email: string | null;
   coordinates: { lat: number; lng: number } | null;
   contactInfo: string | null;
 }
@@ -76,7 +77,12 @@ function buildBalloonContent(dealer: Dealer): string {
     html += `<div style="margin-top:6px;font-size:13px;display:flex;gap:4px"><span>📍</span><span>${dealer.address}</span></div>`;
   }
   if (dealer.phone) {
-    html += `<div style="margin-top:4px;font-size:13px;display:flex;gap:4px"><span>📞</span><a href="tel:${dealer.phone}" style="color:#1a73e8">${dealer.phone}</a></div>`;
+    const phones = dealer.phone.split(/[,;]/).map((p) => p.trim()).filter(Boolean);
+    const phonesHtml = phones.map((p) => `<a href="tel:${p}" style="color:#1a73e8">${p}</a>`).join("<br>");
+    html += `<div style="margin-top:4px;font-size:13px;display:flex;gap:4px"><span>📞</span><div>${phonesHtml}</div></div>`;
+  }
+  if (dealer.email) {
+    html += `<div style="margin-top:4px;font-size:13px;display:flex;gap:4px"><span>✉️</span><a href="mailto:${dealer.email}" style="color:#1a73e8">${dealer.email}</a></div>`;
   }
   if (dealer.contactInfo) {
     html += `<div style="margin-top:4px;font-size:12px;color:#888">${dealer.contactInfo}</div>`;
@@ -136,9 +142,21 @@ export function DealersClient({ dealers }: DealersClientProps) {
 
         const withCoords = dealers.filter((d) => d.coordinates);
 
+        const seen = new Map<string, number>();
+        const placemarks: any[] = [];
+        const OFFSET = 0.009;
+
         withCoords.forEach((dealer) => {
+          const key = `${dealer.coordinates!.lat},${dealer.coordinates!.lng}`;
+          const count = seen.get(key) ?? 0;
+          seen.set(key, count + 1);
+
+          const angle = (2 * Math.PI * count) / Math.max(count + 1, 2);
+          const lat = dealer.coordinates!.lat + (count > 0 ? OFFSET * Math.cos(angle) : 0);
+          const lng = dealer.coordinates!.lng + (count > 0 ? OFFSET * Math.sin(angle) : 0);
+
           const placemark = new window.ymaps.Placemark(
-            [dealer.coordinates!.lat, dealer.coordinates!.lng],
+            [lat, lng],
             {
               balloonContentBody: buildBalloonContent(dealer),
               hintContent: dealer.title,
@@ -148,12 +166,21 @@ export function DealersClient({ dealers }: DealersClientProps) {
 
           placemark.events.add("balloonopen", () => selectDealer(dealer.id));
 
-          map.geoObjects.add(placemark);
+          placemarks.push(placemark);
           placemarkMapRef.current.set(dealer.id, placemark);
         });
 
+        const clusterer = new window.ymaps.Clusterer({
+          preset: "islands#redClusterIcons",
+          clusterDisableClickZoom: false,
+          clusterOpenBalloonOnClick: false,
+        });
+
+        clusterer.add(placemarks);
+        map.geoObjects.add(clusterer);
+
         if (withCoords.length > 1) {
-          const bounds = map.geoObjects.getBounds();
+          const bounds = clusterer.getBounds();
           if (bounds) {
             map.setBounds(bounds, { checkZoomRange: true, zoomMargin: 50 });
           }
@@ -242,14 +269,31 @@ export function DealersClient({ dealers }: DealersClientProps) {
                   </p>
                 )}
                 {dealer.phone && (
+                  <div className="flex items-start gap-2">
+                    <Phone className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
+                    <div className="flex flex-col">
+                      {dealer.phone.split(/[,;]/).map((p) => (
+                        <a
+                          key={p.trim()}
+                          href={`tel:${p.trim()}`}
+                          className="hover:underline"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          {p.trim()}
+                        </a>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {dealer.email && (
                   <p className="flex items-center gap-2">
-                    <Phone className="h-4 w-4 shrink-0 text-muted-foreground" />
+                    <Mail className="h-4 w-4 shrink-0 text-muted-foreground" />
                     <a
-                      href={`tel:${dealer.phone}`}
+                      href={`mailto:${dealer.email}`}
                       className="hover:underline"
                       onClick={(e) => e.stopPropagation()}
                     >
-                      {dealer.phone}
+                      {dealer.email}
                     </a>
                   </p>
                 )}

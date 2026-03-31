@@ -78,6 +78,7 @@ export interface Product {
   category: ProductCategory | null;
   Related_Products: Product[];
   reviews: Review[];
+  sortOrder: number;
   seo: SEOComponent | null;
   createdAt: string;
   updatedAt: string;
@@ -100,6 +101,7 @@ export interface Dealer {
   City: string | null;
   Address: string | null;
   Phone: string | null;
+  Email: string | null;
   Coordinates: { lat: number; lng: number } | null;
   Contact_Info: string | null;
   isActive: boolean;
@@ -151,6 +153,7 @@ export interface Review {
   author: string;
   text: string;
   rating: number | null;
+  date: string | null;
   product: Product | null;
   isPublished: boolean;
   createdAt: string;

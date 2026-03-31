@@ -6,6 +6,13 @@ import { Calculator } from "@/components/calculator";
 import { ModalForm } from "@/components/modal-form";
 import { BuyForm } from "@/components/forms/buy-form";
 import { ReviewForm } from "@/components/forms/review-form";
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselPrevious,
+  CarouselNext,
+} from "@/components/ui/carousel";
 import { Star } from "lucide-react";
 import type { Product, Review } from "@/lib/types";
 
@@ -41,14 +48,21 @@ export function ProductDetailClient({
       {relatedProducts.length > 0 && (
         <section className="mt-12">
           <h2 className="text-2xl font-semibold">Сопутствующие товары</h2>
-          <div className="mt-4 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {relatedProducts.map((rp) => (
-              <ProductCard
-                key={rp.id}
-                product={rp}
-                onBuyClick={handleBuyClick}
-              />
-            ))}
+          <div className="mt-4 px-12">
+            <Carousel opts={{ align: "start", loop: relatedProducts.length > 3 }}>
+              <CarouselContent>
+                {relatedProducts.map((rp) => (
+                  <CarouselItem
+                    key={rp.id}
+                    className="basis-full sm:basis-1/2 lg:basis-1/3"
+                  >
+                    <ProductCard product={rp} onBuyClick={handleBuyClick} />
+                  </CarouselItem>
+                ))}
+              </CarouselContent>
+              <CarouselPrevious className="-left-12" />
+              <CarouselNext className="-right-12" />
+            </Carousel>
           </div>
         </section>
       )}

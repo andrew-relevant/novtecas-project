@@ -4,7 +4,7 @@ import { Phone, Mail, MapPin } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 
 const FOOTER_NAV = [
-  { label: "О компании", href: "/company/about" },
+  { label: "О компании", href: "/about" },
   { label: "Продукция", href: "/products" },
   { label: "Портфолио", href: "/portfolio" },
   { label: "Дилерам", href: "/dealers" },

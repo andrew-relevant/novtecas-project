@@ -37,6 +37,7 @@ export default async function DealersPage() {
       city: d.City,
       address: d.Address,
       phone: d.Phone,
+      email: d.Email,
       coordinates: d.Coordinates,
       contactInfo: d.Contact_Info,
     }))

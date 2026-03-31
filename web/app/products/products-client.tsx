@@ -36,7 +36,7 @@ export function ProductsClient({ products, categories }: ProductsClientProps) {
         onValueChange={setActiveCategory}
         className="mt-6"
       >
-        <TabsList className="flex flex-wrap gap-1">
+        <TabsList className="inline-flex h-auto flex-wrap gap-1 rounded-lg">
           <TabsTrigger value="all">Все</TabsTrigger>
           {categories.map((cat) => (
             <TabsTrigger key={cat.id} value={cat.slug}>

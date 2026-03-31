@@ -38,6 +38,12 @@
       "type": "relation",
       "relation": "manyToOne",
       "target": "api::product.product"
+    },
+    "attachment": {
+      "type": "media",
+      "multiple": false,
+      "required": false,
+      "allowedTypes": ["files"]
     }
   }
 }

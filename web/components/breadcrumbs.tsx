@@ -14,7 +14,6 @@ import {
 import { Fragment } from "react";
 
 const SEGMENT_LABELS: Record<string, string> = {
-  company: "Компания",
   about: "О компании",
   production: "Производство",
   technology: "Технология укладки",
@@ -26,6 +25,9 @@ const SEGMENT_LABELS: Record<string, string> = {
   portfolio: "Портфолио",
   dealers: "Дилерам",
   media: "Полезное",
+  news: "Новости",
+  articles: "Статьи",
+  videos: "Видео",
   contacts: "Контакты",
   privacy: "Политика конфиденциальности",
 };

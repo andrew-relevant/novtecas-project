@@ -10,7 +10,7 @@ export default async function ProductsPage() {
       params: {
         "populate": "*",
         "pagination[pageSize]": "100",
-        "sort[0]": "Title:asc",
+        "sort[0]": "sortOrder:asc",
       },
       fallback: { data: [], meta: {} },
     }),

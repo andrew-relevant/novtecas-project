@@ -92,6 +92,10 @@
     },
     "Price_Note": {
       "type": "string"
+    },
+    "sortOrder": {
+      "type": "integer",
+      "default": 0
     }
   }
 }

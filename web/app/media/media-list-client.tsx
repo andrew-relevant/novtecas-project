@@ -1,13 +1,12 @@
 "use client";
 
-import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { getStrapiMedia } from "@/lib/strapi";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { FileText, Newspaper, Video } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 type MediaType = "news" | "article" | "video";
 
@@ -24,6 +23,7 @@ interface MediaItem {
 
 interface MediaListClientProps {
   items: MediaItem[];
+  currentType: MediaType | "all";
 }
 
 const TYPE_LABELS: Record<MediaType, string> = {
@@ -38,6 +38,13 @@ const TYPE_ICONS: Record<MediaType, React.ElementType> = {
   video: Video,
 };
 
+const TABS: { label: string; href: string; value: MediaType | "all" }[] = [
+  { label: "Все", href: "/media", value: "all" },
+  { label: "Новости", href: "/media/news", value: "news" },
+  { label: "Статьи", href: "/media/articles", value: "article" },
+  { label: "Видео", href: "/media/videos", value: "video" },
+];
+
 function formatDate(dateStr: string | null): string {
   if (!dateStr) return "";
   return new Date(dateStr).toLocaleDateString("ru-RU", {
@@ -47,24 +54,28 @@ function formatDate(dateStr: string | null): string {
   });
 }
 
-export function MediaListClient({ items }: MediaListClientProps) {
-  const [filter, setFilter] = useState<MediaType | "all">("all");
-
-  const filtered = filter === "all" ? items : items.filter((i) => i.type === filter);
+export function MediaListClient({ items, currentType }: MediaListClientProps) {
+  const filtered =
+    currentType === "all" ? items : items.filter((i) => i.type === currentType);
 
   return (
     <div className="mt-6">
-      <Tabs
-        value={filter}
-        onValueChange={(v) => setFilter(v as MediaType | "all")}
-      >
-        <TabsList>
-          <TabsTrigger value="all">Все</TabsTrigger>
-          <TabsTrigger value="news">Новости</TabsTrigger>
-          <TabsTrigger value="article">Статьи</TabsTrigger>
-          <TabsTrigger value="video">Видео</TabsTrigger>
-        </TabsList>
-      </Tabs>
+      <div className="inline-flex h-10 items-center justify-center rounded-md bg-muted p-1 text-muted-foreground">
+        {TABS.map((tab) => (
+          <Link
+            key={tab.value}
+            href={tab.href}
+            className={cn(
+              "inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+              currentType === tab.value
+                ? "bg-background text-foreground shadow-sm"
+                : "hover:bg-background/50 hover:text-foreground",
+            )}
+          >
+            {tab.label}
+          </Link>
+        ))}
+      </div>
 
       {filtered.length > 0 ? (
         <div className="mt-6 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
@@ -118,9 +129,7 @@ export function MediaListClient({ items }: MediaListClientProps) {
           })}
         </div>
       ) : (
-        <p className="mt-8 text-muted-foreground">
-          Публикации не найдены.
-        </p>
+        <p className="mt-8 text-muted-foreground">Публикации не найдены.</p>
       )}
     </div>
   );

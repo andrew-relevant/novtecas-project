@@ -34,6 +34,9 @@
     "isPublished": {
       "type": "boolean",
       "default": false
+    },
+    "date": {
+      "type": "date"
     }
   }
 }

@@ -25,6 +25,9 @@
     "Phone": {
       "type": "string"
     },
+    "Email": {
+      "type": "email"
+    },
     "Coordinates": {
       "type": "json"
     },

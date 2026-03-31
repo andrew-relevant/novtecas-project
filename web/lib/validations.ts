@@ -51,6 +51,14 @@ export const reviewFormSchema = z.object({
   honeypot: z.string().max(0).optional(),
 });
 
+export const DEALER_ATTACHMENT_MAX_SIZE = 10 * 1024 * 1024; // 10 MB
+export const DEALER_ATTACHMENT_ACCEPTED_TYPES = [
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  "application/msword",
+  "application/pdf",
+];
+export const DEALER_ATTACHMENT_ACCEPT = ".docx,.doc,.pdf";
+
 export type BuyFormData = z.infer<typeof buyFormSchema>;
 export type DealerFormData = z.infer<typeof dealerFormSchema>;
 export type ContactFormData = z.infer<typeof contactFormSchema>;

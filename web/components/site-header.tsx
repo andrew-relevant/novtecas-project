@@ -18,15 +18,15 @@ import {
 const NAV_ITEMS = [
   {
     label: "Компания",
-    href: "/company/about",
+    href: "/about",
     children: [
-      { label: "О компании", href: "/company/about" },
-      { label: "Производство", href: "/company/production" },
-      { label: "Технология укладки", href: "/company/production/technology", indent: true },
-      { label: "Гидрофобный слой", href: "/company/production/hydrophobic", indent: true },
-      { label: "Документы", href: "/company/documents" },
-      { label: "Наши партнёры", href: "/company/partners" },
-      { label: "Чёрный список", href: "/company/blacklist" },
+      { label: "О компании", href: "/about" },
+      { label: "Производство", href: "/production" },
+      { label: "Технология укладки", href: "/production/technology", indent: true },
+      { label: "Гидрофобный слой", href: "/production/hydrophobic", indent: true },
+      { label: "Документы", href: "/documents" },
+      { label: "Наши партнёры", href: "/partners" },
+      { label: "Чёрный список", href: "/blacklist" },
     ],
   },
   {
@@ -45,9 +45,9 @@ const NAV_ITEMS = [
     label: "Полезное",
     href: "/media",
     children: [
-      { label: "Новости", href: "/media?type=news" },
-      { label: "Статьи", href: "/media?type=article" },
-      { label: "Видео", href: "/media?type=video" },
+      { label: "Новости", href: "/media/news" },
+      { label: "Статьи", href: "/media/articles" },
+      { label: "Видео", href: "/media/videos" },
     ],
   },
   {

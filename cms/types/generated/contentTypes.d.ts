@@ -449,6 +449,7 @@ export interface ApiDealerDealer extends Struct.CollectionTypeSchema {
     createdAt: Schema.Attribute.DateTime;
     createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
+    Email: Schema.Attribute.Email;
     isActive: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<true>;
     locale: Schema.Attribute.String & Schema.Attribute.Private;
     localizations: Schema.Attribute.Relation<
@@ -561,6 +562,7 @@ export interface ApiLeadLead extends Struct.CollectionTypeSchema {
     draftAndPublish: false;
   };
   attributes: {
+    attachment: Schema.Attribute.Media<'files'>;
     company: Schema.Attribute.String;
     createdAt: Schema.Attribute.DateTime;
     createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
@@ -1013,6 +1015,7 @@ export interface ApiProductProduct extends Struct.CollectionTypeSchema {
     Show_Price_Note: Schema.Attribute.Boolean &
       Schema.Attribute.DefaultTo<false>;
     Slug: Schema.Attribute.UID<'Title'> & Schema.Attribute.Required;
+    sortOrder: Schema.Attribute.Integer & Schema.Attribute.DefaultTo<0>;
     Specs: Schema.Attribute.JSON;
     Title: Schema.Attribute.String & Schema.Attribute.Required;
     Unit_of_Measure: Schema.Attribute.String;
@@ -1039,6 +1042,7 @@ export interface ApiReviewReview extends Struct.CollectionTypeSchema {
     createdAt: Schema.Attribute.DateTime;
     createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
+    date: Schema.Attribute.Date;
     isPublished: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<false>;
     locale: Schema.Attribute.String & Schema.Attribute.Private;
     localizations: Schema.Attribute.Relation<

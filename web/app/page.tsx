@@ -73,6 +73,7 @@ export default async function HomePage() {
         "populate": "*",
         "filters[isFeatured][$eq]": "true",
         "pagination[pageSize]": "100",
+        "sort[0]": "sortOrder:asc",
       },
       fallback: { data: [] },
     }),
@@ -148,7 +149,7 @@ export default async function HomePage() {
               }}
             />
             <Button variant="outline" className="mt-6" asChild>
-              <Link href={home?.aboutCtaHref ?? "/company/about"}>
+              <Link href={home?.aboutCtaHref ?? "/about"}>
                 {home?.aboutCtaLabel ?? "Подробнее о компании"}
               </Link>
             </Button>

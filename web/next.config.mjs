@@ -57,12 +57,12 @@ const nextConfig = {
       { source: "/maps", destination: "/dealers", permanent: true },
 
       // Media (old: News, Articles, Videos)
-      { source: "/novosti", destination: "/media?type=news", permanent: true },
-      { source: "/novosti/:slug*", destination: "/media", permanent: true },
-      { source: "/stati", destination: "/media?type=article", permanent: true },
-      { source: "/stati/:slug*", destination: "/media", permanent: true },
-      { source: "/video", destination: "/media?type=video", permanent: true },
-      { source: "/video/:slug*", destination: "/media", permanent: true },
+      { source: "/novosti", destination: "/media/news", permanent: true },
+      { source: "/novosti/:slug*", destination: "/media/news", permanent: true },
+      { source: "/stati", destination: "/media/articles", permanent: true },
+      { source: "/stati/:slug*", destination: "/media/articles", permanent: true },
+      { source: "/video", destination: "/media/videos", permanent: true },
+      { source: "/video/:slug*", destination: "/media/videos", permanent: true },
 
       // Contacts
       { source: "/kontakty", destination: "/contacts", permanent: true },

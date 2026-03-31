@@ -1,24 +1,33 @@
 import { NextResponse } from "next/server";
-import { dealerFormSchema } from "@/lib/validations";
+import { dealerFormSchema, DEALER_ATTACHMENT_MAX_SIZE, DEALER_ATTACHMENT_ACCEPTED_TYPES } from "@/lib/validations";
 
-function isHoneypotTripped(body: unknown): boolean {
-  if (typeof body !== "object" || body === null || !("honeypot" in body)) return false;
-  const hp = (body as { honeypot?: unknown }).honeypot;
-  return typeof hp === "string" && hp.trim() !== "";
+function isHoneypotTripped(honeypot: unknown): boolean {
+  return typeof honeypot === "string" && honeypot.trim() !== "";
 }
 
 export async function POST(request: Request) {
   try {
-    let body: unknown;
+    let formData: FormData;
     try {
-      body = await request.json();
+      formData = await request.formData();
     } catch {
-      return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
+      return NextResponse.json({ error: "Invalid form data" }, { status: 400 });
     }
 
-    if (isHoneypotTripped(body)) {
+    const honeypot = formData.get("honeypot");
+    if (isHoneypotTripped(honeypot)) {
       return NextResponse.json({}, { status: 200 });
     }
+
+    const body = {
+      name: formData.get("name"),
+      phone: formData.get("phone"),
+      email: formData.get("email") || undefined,
+      company: formData.get("company") || undefined,
+      message: formData.get("message") || undefined,
+      consent: formData.get("consent") === "true",
+      honeypot: (formData.get("honeypot") as string) || undefined,
+    };
 
     const parsed = dealerFormSchema.safeParse(body);
     if (!parsed.success) {
@@ -28,35 +37,69 @@ export async function POST(request: Request) {
       );
     }
 
-    const { honeypot: _h, consent: _c, email, message, company, ...rest } = parsed.data;
+    const attachment = formData.get("attachment") as File | null;
+    if (attachment && attachment.size > 0) {
+      if (!DEALER_ATTACHMENT_ACCEPTED_TYPES.includes(attachment.type)) {
+        return NextResponse.json({ error: "Invalid file type" }, { status: 400 });
+      }
+      if (attachment.size > DEALER_ATTACHMENT_MAX_SIZE) {
+        return NextResponse.json({ error: "File too large" }, { status: 400 });
+      }
+    }
+
     const strapiUrl = process.env.STRAPI_INTERNAL_URL || "http://cms:1337";
     const token = process.env.STRAPI_API_TOKEN;
     if (!token) {
       return NextResponse.json({ error: "Server configuration error" }, { status: 500 });
     }
 
-    const data: Record<string, unknown> = {
+    const { consent: _c, honeypot: _h, email, message, company, ...rest } = parsed.data;
+    const leadData: Record<string, unknown> = {
       type: "dealer",
       name: rest.name,
       phone: rest.phone,
     };
-    if (email) data.email = email;
-    if (message) data.message = message;
-    if (company) data.company = company;
+    if (email) leadData.email = email;
+    if (message) leadData.message = message;
+    if (company) leadData.company = company;
 
-    const res = await fetch(`${strapiUrl.replace(/\/$/, "")}/api/leads`, {
+    const leadRes = await fetch(`${strapiUrl.replace(/\/$/, "")}/api/leads`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${token}`,
       },
-      body: JSON.stringify({ data }),
+      body: JSON.stringify({ data: leadData }),
     });
 
-    if (!res.ok) {
-      const text = await res.text();
-      console.error("Strapi POST /api/leads failed", res.status, text);
+    if (!leadRes.ok) {
+      const text = await leadRes.text();
+      console.error("Strapi POST /api/leads failed", leadRes.status, text);
       return NextResponse.json({ error: "Failed to submit" }, { status: 500 });
+    }
+
+    if (attachment && attachment.size > 0) {
+      const leadJson = await leadRes.json();
+      const leadId = leadJson.data?.id;
+
+      if (leadId) {
+        const uploadForm = new FormData();
+        uploadForm.append("files", attachment, attachment.name);
+        uploadForm.append("ref", "api::lead.lead");
+        uploadForm.append("refId", String(leadId));
+        uploadForm.append("field", "attachment");
+
+        const uploadRes = await fetch(`${strapiUrl.replace(/\/$/, "")}/api/upload`, {
+          method: "POST",
+          headers: { Authorization: `Bearer ${token}` },
+          body: uploadForm,
+        });
+
+        if (!uploadRes.ok) {
+          const text = await uploadRes.text();
+          console.error("Strapi file upload failed", uploadRes.status, text);
+        }
+      }
     }
 
     return NextResponse.json({ ok: true }, { status: 200 });

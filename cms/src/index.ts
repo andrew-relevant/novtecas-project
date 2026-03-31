@@ -173,10 +173,111 @@ async function ensureAdminUser(strapi) {
   strapi.log.info(`Admin user created: ${email}`);
 }
 
+function isFieldCell(cell: any, name: string) {
+  return cell === name || (cell && typeof cell === "object" && cell.name === name);
+}
+
+function removeFieldFromLayout(layout: any, fieldName: string): any | null {
+  if (!Array.isArray(layout)) return null;
+
+  for (let i = 0; i < layout.length; i++) {
+    const item = layout[i];
+    if (isFieldCell(item, fieldName)) {
+      return layout.splice(i, 1)[0];
+    }
+
+    if (Array.isArray(item)) {
+      const removed = removeFieldFromLayout(item, fieldName);
+      if (removed) return removed;
+      continue;
+    }
+
+    if (item && typeof item === "object") {
+      for (const key of Object.keys(item)) {
+        const value = (item as any)[key];
+        if (!Array.isArray(value)) continue;
+        const removed = removeFieldFromLayout(value, fieldName);
+        if (removed) return removed;
+      }
+    }
+  }
+
+  return null;
+}
+
+function findRowWithField(layout: any, fieldName: string): any[] | null {
+  if (!Array.isArray(layout)) return null;
+
+  // Often a "row" is an array of cells
+  if (layout.some((cell) => isFieldCell(cell, fieldName))) return layout;
+
+  for (const item of layout) {
+    if (Array.isArray(item)) {
+      const found = findRowWithField(item, fieldName);
+      if (found) return found;
+      continue;
+    }
+
+    if (item && typeof item === "object") {
+      for (const key of Object.keys(item)) {
+        const value = (item as any)[key];
+        if (!Array.isArray(value)) continue;
+        const found = findRowWithField(value, fieldName);
+        if (found) return found;
+      }
+    }
+  }
+
+  return null;
+}
+
+async function ensureDealerEmailNextToPhoneInAdmin(strapi: any) {
+  try {
+    const store = strapi.store({ type: "plugin", name: "content-manager" });
+    const key = "content_types::api::dealer.dealer";
+    const value = await store.get({ key });
+
+    if (!value?.layouts?.edit) return;
+
+    // Remove Email from wherever it currently is, then re-insert near Phone
+    const removedEmail =
+      removeFieldFromLayout(value.layouts.edit, "Email") ?? { name: "Email", size: 6 };
+
+    const phoneRow = findRowWithField(value.layouts.edit, "Phone");
+    if (!phoneRow) {
+      // Fallback: avoid losing the field if layout is unexpected
+      if (Array.isArray(value.layouts.edit)) value.layouts.edit.push([removedEmail]);
+      await store.set({ key, value });
+      return;
+    }
+
+    const phoneIdx = phoneRow.findIndex((cell) => isFieldCell(cell, "Phone"));
+    const phoneCell = phoneIdx >= 0 ? phoneRow[phoneIdx] : null;
+
+    // If Phone occupies full width, split it to make room for Email.
+    if (phoneCell && typeof phoneCell === "object" && phoneCell.size === 12) {
+      phoneCell.size = 6;
+      if (removedEmail && typeof removedEmail === "object" && removedEmail.size == null) {
+        removedEmail.size = 6;
+      }
+    }
+
+    // Insert Email right after Phone in the same row
+    phoneRow.splice(phoneIdx + 1, 0, removedEmail);
+
+    await store.set({ key, value });
+  } catch (err) {
+    strapi.log.warn(
+      `Content Manager layout: не удалось разместить Email рядом с Phone для Dealer: ${err.message}`
+    );
+  }
+}
+
 export default {
   async bootstrap({ strapi }) {
     await ensureAdminUser(strapi);
     await ensurePublicPermissions(strapi);
+    await ensureDealerEmailNextToPhoneInAdmin(strapi);
 
     const productCount = await strapi.documents("api::product.product").count();
     if (productCount > 0) {
@@ -204,7 +305,7 @@ export default {
       {
         Title: "Холодный асфальт 35 кг (до 1000 кг)", Slug: "cold-asphalt-35kg-under-1000",
         Short_Description: "Цена при оплате менее 1000 кг. Стандартная фасовка в полиэтиленовых мешках.",
-        Price_Rub: 680, Unit_of_Measure: "мешок", Weight: "35 кг", isFeatured: true, isCustomOrder: false, Show_Price_Note: true, Price_Note: "Уточняйте актуальную цену у менеджера", category: catCold.documentId,
+        Price_Rub: 680, Unit_of_Measure: "мешок", Weight: "35 кг", isFeatured: true, isCustomOrder: false, Show_Price_Note: true, Price_Note: "Уточняйте актуальную цену у менеджера", sortOrder: 100, category: catCold.documentId,
         Full_Description: "<p>Холодный асфальт Perma Patch в полиэтиленовых мешках по 35 кг — стандартная упаковка, всегда в наличии на складе. Идеально подходит для ямочного ремонта дорог, тротуаров и парковок.</p><p>Состав может уплотняться даже при -27°С, сохраняя подвижность и качество материала.</p>",
         priceTiers: [{ minQtyKg: 0, price: 680, label: "до 1000 кг" }, { minQtyKg: 1000, price: 640, label: "от 1000 кг" }, { minQtyKg: 5000, price: 610, label: "от 5000 кг" }],
         imageFile: "35kg.jpg",
@@ -213,7 +314,7 @@ export default {
       {
         Title: "Холодный асфальт 35 кг (от 1000 кг)", Slug: "cold-asphalt-35kg-from-1000",
         Short_Description: "Цена при оплате более 1000 кг. Стандартная фасовка в полиэтиленовых мешках.",
-        Price_Rub: 640, Unit_of_Measure: "мешок", Weight: "35 кг", isFeatured: true, isCustomOrder: false, Show_Price_Note: true, Price_Note: "Уточняйте актуальную цену у менеджера", category: catCold.documentId,
+        Price_Rub: 640, Unit_of_Measure: "мешок", Weight: "35 кг", isFeatured: true, isCustomOrder: false, Show_Price_Note: true, Price_Note: "Уточняйте актуальную цену у менеджера", sortOrder: 200, category: catCold.documentId,
         Full_Description: "<p>Холодный асфальт Perma Patch в мешках по 35 кг. Оптовая цена при заказе от 1000 кг. Стандартная упаковка, всегда в наличии.</p>",
         imageFile: "35kg.jpg",
         galleryFiles: ["35kg.jpg"],
@@ -221,7 +322,7 @@ export default {
       {
         Title: "Холодный асфальт 35 кг (от 5000кг)", Slug: "cold-asphalt-35kg-from-5000",
         Short_Description: "Оптовая партия от 5000 кг. Максимально выгодная цена.",
-        Price_Rub: 610, Unit_of_Measure: "мешок", Weight: "35 кг", isFeatured: true, isCustomOrder: false, Show_Price_Note: true, Price_Note: "Уточняйте актуальную цену у менеджера", category: catCold.documentId,
+        Price_Rub: 610, Unit_of_Measure: "мешок", Weight: "35 кг", isFeatured: true, isCustomOrder: false, Show_Price_Note: true, Price_Note: "Уточняйте актуальную цену у менеджера", sortOrder: 300, category: catCold.documentId,
         Full_Description: "<p>Холодный асфальт Perma Patch — лучшая цена при крупном опте от 5000 кг. Упаковка 35 кг, всегда в наличии.</p>",
         imageFile: "35kg.jpg",
         galleryFiles: ["35kg.jpg"],
@@ -229,23 +330,23 @@ export default {
       {
         Title: "Холодный асфальт 50 кг (полипропилен)", Slug: "cold-asphalt-50kg",
         Short_Description: "Под спецзаказ при определённой партии. Полипропиленовые мешки.",
-        Price_Rub: 760, Unit_of_Measure: "мешок", Weight: "50 кг", isFeatured: false, isCustomOrder: true, Show_Price_Note: true, Price_Note: "Уточняйте актуальную цену у менеджера", category: catCold.documentId,
+        Price_Rub: 760, Unit_of_Measure: "мешок", Weight: "50 кг", isFeatured: false, isCustomOrder: true, Show_Price_Note: true, Price_Note: "Уточняйте актуальную цену у менеджера", sortOrder: 400, category: catCold.documentId,
         Full_Description: "<p>Холодный асфальт в полипропиленовых мешках по 50 кг. Производится под спецзаказ при определённой партии. Уточняйте актуальную цену у менеджера.</p>",
         imageFile: "30-50kg.jpg",
         galleryFiles: ["30-50kg.jpg"],
       },
       {
         Title: "Холодный асфальт 30 кг (полипропилен)", Slug: "cold-asphalt-30kg",
-        Short_Description: "Под спецзаказ при определённой партии. Минимальная партия — 1 тонна.",
-        Price_Rub: 470, Unit_of_Measure: "мешок", Weight: "30 кг", isFeatured: false, isCustomOrder: true, Show_Price_Note: true, Price_Note: "Уточняйте актуальную цену у менеджера", category: catCold.documentId,
-        Full_Description: "<p>Холодный асфальт Perma Patch в мешках по 30 кг. Фасовка в полипропилен под заказ. Минимальная партия — 1 тонна.</p>",
+        Short_Description: "Под спецзаказ при определённой партии. Полипропиленовые мешки.",
+        Price_Rub: 470, Unit_of_Measure: "мешок", Weight: "30 кг", isFeatured: false, isCustomOrder: true, Show_Price_Note: true, Price_Note: "Уточняйте актуальную цену у менеджера", sortOrder: 500, category: catCold.documentId,
+        Full_Description: "<p>Холодный асфальт Perma Patch в мешках по 30 кг. Фасовка в полипропилен под заказ.</p>",
         imageFile: "30-50kg.jpg",
         galleryFiles: ["30-50kg.jpg"],
       },
       {
         Title: "Холодный асфальт 1000 кг (биг-бег)", Slug: "cold-asphalt-1000kg",
         Short_Description: "Холодный асфальт Perma Patch в биг-бегах по 1000 кг.",
-        Price_Rub: 17910, Unit_of_Measure: "тонна", Weight: "1000 кг", isFeatured: false, isCustomOrder: true, Show_Price_Note: true, Price_Note: "Уточняйте актуальную цену у менеджера", category: catCold.documentId,
+        Price_Rub: 17910, Unit_of_Measure: "тонна", Weight: "1000 кг", isFeatured: false, isCustomOrder: true, Show_Price_Note: true, Price_Note: "Уточняйте актуальную цену у менеджера", sortOrder: 600, category: catCold.documentId,
         Full_Description: "<p>Холодный асфальт Perma Patch фасовка в биг-бегах по 1000 кг. Экономичный вариант для крупных объёмов работ.</p>",
         imageFile: "1000kg.jpg",
         galleryFiles: ["1000kg.jpg"],
@@ -253,15 +354,15 @@ export default {
       {
         Title: "Красный холодный асфальт Perma Patch Color, фасовка 1000 кг", Slug: "red-cold-asphalt-bags",
         Short_Description: "Цветной холодный асфальт для выделения дорожных зон и покрытий.",
-        Price_Rub: 1565, Unit_of_Measure: "мешок", Weight: "1000 кг", isFeatured: false, isCustomOrder: true, Show_Price_Note: true, Price_Note: "Уточняйте актуальную цену у менеджера", category: catCold.documentId,
+        Price_Rub: 1565, Unit_of_Measure: "мешок", Weight: "1000 кг", isFeatured: false, isCustomOrder: true, Show_Price_Note: true, Price_Note: "Уточняйте актуальную цену у менеджера", sortOrder: 700, category: catCold.documentId,
         Full_Description: "<p>Красный холодный асфальт Perma Patch COLOR — декоративное покрытие для выделения пешеходных зон, велодорожек и специальных площадок. Уточняйте актуальную цену.</p>",
         imageFile: "1000kg.jpg",
         galleryFiles: ["1000kg.jpg","red1.jpg","red2.jpg"],
       },
       {
-        Title: "Красный Холодный асфальт в мешках Perma Patch - COLOR, 30 кг", Slug: "red-cold-asphalt-bags",
+        Title: "Красный Холодный асфальт в мешках Perma Patch - COLOR, 30 кг", Slug: "red-cold-asphalt-30kg",
         Short_Description: "Цветной холодный асфальт для выделения дорожных зон и покрытий.",
-        Price_Rub: 1565, Unit_of_Measure: "мешок", Weight: "30 кг", isFeatured: false, isCustomOrder: true, Show_Price_Note: true, Price_Note: "Уточняйте актуальную цену у менеджера", category: catCold.documentId,
+        Price_Rub: 1565, Unit_of_Measure: "мешок", Weight: "30 кг", isFeatured: false, isCustomOrder: true, Show_Price_Note: true, Price_Note: "Уточняйте актуальную цену у менеджера", sortOrder: 800, category: catCold.documentId,
         Full_Description: "<p>Красный холодный асфальт Perma Patch COLOR — декоративное покрытие для выделения пешеходных зон, велодорожек и специальных площадок. Уточняйте актуальную цену.</p>",
         imageFile: "30-50kg.jpg",
         galleryFiles: ["30-50kg.jpg","red1.jpg","red2.jpg"],
@@ -269,7 +370,7 @@ export default {
       {
         Title: "Вяжущее для холодного асфальта 205 л (185 кг)", Slug: "binder-perma-patch-205l",
         Short_Description: "Вяжущее для производства холодного асфальта Perma Patch.",
-        Price_Rub: 34385, Unit_of_Measure: "бочка", Weight: "185 кг", isFeatured: false, isCustomOrder: true, Show_Price_Note: true, Price_Note: "Уточняйте актуальную цену у менеджера", category: catCold.documentId,
+        Price_Rub: 34385, Unit_of_Measure: "бочка", Weight: "185 кг", isFeatured: false, isCustomOrder: true, Show_Price_Note: true, Price_Note: "Уточняйте актуальную цену у менеджера", sortOrder: 900, category: catCold.documentId,
         Full_Description: "<p>Вяжущее (концентрат) для производства холодного асфальта по канадской технологии Perma Patch. Объём 205 литров (185 кг).</p>",
         imageFile: "vyazhuschee.jpg",
         galleryFiles: ["vyazhuschee.jpg"],
@@ -277,13 +378,14 @@ export default {
       {
         Title: "Мешки полиэтиленовые для холодного асфальта", Slug: "pe-bags-cold-asphalt",
         Short_Description: "Мешки полиэтиленовые с заваренным дном, для пакетирования холодного асфальта по 25 или 30 кг.",
-        Price_Rub: 95, Unit_of_Measure: "шт.", Weight: "—", isFeatured: false, isCustomOrder: false, Show_Price_Note: true, Price_Note: "Уточняйте актуальную цену у менеджера", category: catBags.documentId,
+        Price_Rub: 95, Unit_of_Measure: "шт.", Weight: "—", isFeatured: false, isCustomOrder: false, Show_Price_Note: true, Price_Note: "Уточняйте актуальную цену у менеджера", sortOrder: 1000, category: catBags.documentId,
         Full_Description: "<p>Мешки полиэтиленовые с заваренным дном, без боковых складок, для пакетирования холодного асфальта по 25 или 30 кг.</p>",
         imageFile: "meshki.jpg",
         galleryFiles: ["meshki.jpg"],
       },
     ];
 
+    const createdProducts: Record<string, { documentId: string }> = {};
     for (const p of productsData) {
       const { imageFile, galleryFiles, ...productData } = p;
 
@@ -292,7 +394,7 @@ export default {
         uploadSeedGallery(strapi, galleryFiles, productData.Title),
       ]);
 
-      await strapi.documents("api::product.product").create({
+      const created = await strapi.documents("api::product.product").create({
         data: {
           ...productData,
           ...(imageId ? { Image: imageId } : {}),
@@ -300,6 +402,174 @@ export default {
         },
         status: "published",
       });
+      createdProducts[productData.Slug] = created;
+    }
+
+    // --- Reviews ---
+    const reviewsData = [
+      {
+        productSlug: "cold-asphalt-50kg",
+        reviews: [
+          {
+            author: "Анатолий",
+            date: "2025-10-22",
+            text: "Холодный асфальт довольно бюджетное покрытие. По прочности, конечно, немного уступает бетону, но зато значительно дешевле. Я покупал 4 мешка для укладки большой площадки возле частного дома. Сделал широкий заезд в 20 метров. Думаю, еще и с другой стороны дома использовать это покрытие.",
+          },
+          {
+            author: "Ян Д.",
+            date: "2025-10-19",
+            text: "Покупал на этом сайте покрытие Холодный асфальт. Я не стал искать специалистов для укладки, делал всем сам. Думаю, получилось неплохо. По крайней мере, соседям стало интересно, чем это я заасфальтировал.",
+          },
+          {
+            author: "Борис",
+            date: "2025-10-16",
+            text: "Выбрали покрытие холодного асфальта для благоустройства парковой площадки возле административного корпуса. Шеф выделил средства на 3 мешка, которых нам вполне хватило. Заодно и ямы залатали возле въезда.",
+          },
+        ],
+      },
+      {
+        productSlug: "cold-asphalt-30kg",
+        reviews: [
+          {
+            author: "Юрий Д.",
+            date: "2025-12-07",
+            text: "Оставлял заявку на сайте. Цена вышла ниже, чем на сайте. Менеджер мне оформил персональную скидку, чем я был приятно удивлен. Вышло очень экономно. Доставка также не подвела. Все привезли быстро. Упаковали хорошо. Все мешки целые и без повреждений.",
+          },
+          {
+            author: "Сергей Снижко",
+            date: "2025-11-28",
+            text: "Оформлял доставку в Краснодар. Товар пришел довольно быстро и мы своевременно провели отгрузку. Я рассчитывал, что начнем ремонт до холодов, и не просчитался. Рекомендую! Оперативно и честно!",
+          },
+          {
+            author: "Николай П.",
+            date: "2025-11-07",
+            text: "Меня приятно порадовали скидки, так как я заказывал большой объем. Оставлял заявку на сайте. Менеджер мне быстро оформил заказ. Перезвонили в течение дня.",
+          },
+          {
+            author: "Игорь С.",
+            date: "2025-10-12",
+            text: "Не так давно узнал о покрытии холодный асфальт. Приезжал к другу на дачу и увидел заметные улучшения на дороге в его стороне. Оказалось, он сам заасфальтировал таким инновационным покрытием. Я тоже решил попробовать. Взял 2 мешка по 35 кг, поеду к родителям на выходных.",
+          },
+          {
+            author: "Юрий",
+            date: "2025-09-19",
+            text: "Решил преобразить площадку возле ворот. Там постоянно остается грязь после дождя, поэтому я выбрал по совету соседа покрытие Холодный асфальт. Заказал сразу 3 мешка, чтобы хватило. Мне хватило на мою площадь 15 м2, еще и осталось полмешка. Посмотрим, как покрытие поведет себя после зимы.",
+          },
+          {
+            author: "Alex",
+            date: "2025-08-16",
+            text: "Живу в Курске. Заказывал в этом магазине неделю назад. Заявку оформил в четверг. В пятницу мне отправили два мешка по 35 кг. А на выходных посылка как раз пришла, как я рассчитывал. Сразу же занялся ремонтом. Спасибо за оперативность!",
+          },
+        ],
+      },
+      {
+        productSlug: "cold-asphalt-35kg-under-1000",
+        reviews: [
+          {
+            author: "Леонид С. А.",
+            date: "2025-12-13",
+            text: "Остался очень доволен качеством материала. Смесь готова к использованию. Мы делали укладку на парковочных местах возле подъезда. Все прошло быстро, несмотря на то, что погода была мрачной (+7 градусов).",
+          },
+          {
+            author: "Виталий",
+            date: "2025-12-08",
+            text: "Хочу отметить вежливое обслуживание и быструю доставку в этой компании. Очень внимательный персонал. Буквально за 5 минут я узнал всю необходимую информацию о товаре и оформил заказ.",
+          },
+          {
+            author: "Олег",
+            date: "2025-11-21",
+            text: "Покупал этот материал по просьбе друга и остался вполне довольным. Делали ремонт на участке и холодный асфальт нас очень выручил. Быстро сделали укладку садовой дорожки.",
+          },
+          {
+            author: "Инга",
+            date: "2025-10-05",
+            text: "Я оформляла заявку на этом сайте на дорожное покрытие Холодный асфальт для своего отца. Он затеял ремонт на даче и решил заасфальтировать дорожку. Менеджер быстро оформил заявку, отправку провели на следующий день. В Красноярск посылка пришла через 2 дня.",
+          },
+          {
+            author: "Петр Павлович",
+            date: "2025-09-19",
+            text: "Покупал холодный асфальт Perma Patch для своего частного дома. У меня лежала несколько лет резина, но она уже совсем износилась и я решил сделать новое покрытие. Плитку не стал выбирать потому, что дорого. Решил остановить выбор на этом продукте. Я не жалею о своем выборе.",
+          },
+          {
+            author: "Николай",
+            date: "2025-09-02",
+            text: "Заказывали на этом сайте. Быстро привозят. Вежливые менеджеры. Выбрал фасовку 35 кг для пробы. Давно слышал о таком покрытии и решил сам приобрести. Я остался доволен.",
+          },
+        ],
+      },
+      {
+        productSlug: "cold-asphalt-35kg-from-1000",
+        reviews: [
+          {
+            author: "Валентин Павлович",
+            date: "2025-12-05",
+            text: "Заказывал на этом сайте не первый раз и решил оставить отзыв. Заказывал 5 мешков по 35 кг. Хорошо упаковали и быстро доставили. Ставлю 5 баллов!",
+          },
+          {
+            author: "Ольга",
+            date: "2025-11-25",
+            text: "Заказывала по просьбе мужа. Менеджер быстро оформил заказ и через три дня посылка с тремя мешками смеси была в нашем отделении почты. О характеристиках товара не могу ничего сказать, так как еще не пользовались.",
+          },
+          {
+            author: "Денис",
+            date: "2025-11-21",
+            text: "Удобно, что смесь продается сразу готовой к эксплуатации. Оформил заказ после 15 часов дня, отправку провели быстро на следующий день. Качеством товара остался довольный.",
+          },
+          {
+            author: "Андрей Игоревич",
+            date: "2025-10-03",
+            text: "Заявку обработали быстро в течении часа. Менеджер мне перезвонил и помог мне рассчитать, сколько нужно мешков на площадь 20 м2, хотя онлайн калькулятор расчета есть на сайте. Странно, что я его сразу не заметил.",
+          },
+          {
+            author: "Родион П.",
+            date: "2025-09-14",
+            text: "Специалисты магазина вежливые и всегда на связи. Помогли мне подобрать покрытие холодного асфальта для благоустройства частной территории. Заказал доставку на почту по предоплате. Все честно доставили в срок.",
+          },
+          {
+            author: "Дмитрий",
+            date: "2025-08-28",
+            text: "В отличие от обычного асфальта, холодный асфальт имеет мелкую зернистость. Я проверил на своем опыте, что он выдерживает значительную нагрузку. Кладку мы проводили при температуре +10 градусов. Заказывал 2 мешка по 35 кг и обошлось недорого – 1100 рублей.",
+          },
+        ],
+      },
+      {
+        productSlug: "cold-asphalt-1000kg",
+        reviews: [
+          {
+            author: "Антон",
+            date: "2025-12-14",
+            text: "Заказывал в этой компании несколько месяцев назад и остался вполне доволен. Звонил вечером после работы, так как днем очень занят. Менеджер быстро объяснил, что мне лучше взять. Я ценю быстрое обслуживание без долгих бесед.",
+          },
+          {
+            author: "Анатолий",
+            date: "2025-12-02",
+            text: "Не могу не отметить приятное обслуживание. Специалисты этой компании знают толк в продукции. Все четко объяснили и помогли подобрать подходящий объем. Благодаря грамотной консультации я значительно сэкономил на перевозке и покупке материала.",
+          },
+          {
+            author: "Евгений Жук",
+            date: "2025-11-02",
+            text: "Компания проверенная. Это не мошенники. Я сначала сомневался, так как не люблю заказывать в интернете, но низкая цена искусила меня. Остался всем доволен, поэтому рекомендую здесь покупать.",
+          },
+        ],
+      },
+    ];
+
+    let reviewCount = 0;
+    for (const group of reviewsData) {
+      const product = createdProducts[group.productSlug];
+      if (!product) continue;
+      for (const r of group.reviews) {
+        await strapi.documents("api::review.review").create({
+          data: {
+            author: r.author,
+            date: r.date,
+            text: r.text,
+            isPublished: true,
+            product: product.documentId,
+          },
+        });
+        reviewCount++;
+      }
     }
 
     // --- Page About ---
@@ -488,29 +758,43 @@ export default {
 
     // --- Dealers ---
     const dealersData = [
-      { Title: "УРАЛСТРОЙПАРТНЕР", City: "Челябинск", Phone: "8 (351) 700-74-44", Coordinates: { lat: 55.1644, lng: 61.4368 } },
-      { Title: "Склад NovTecAs", City: "Москва", Phone: "+7 (495) 240-83-05", Coordinates: { lat: 55.7558, lng: 37.6173 } },
-      { Title: 'ООО "Строительная Помощь"', City: "Нижний Новгород", Phone: "(831) 415-55-59", Coordinates: { lat: 56.2965, lng: 43.9361 } },
-      { Title: "Новая Хатка", City: "Минск", Phone: "8 (017) 227-05-21", Coordinates: { lat: 53.9006, lng: 27.559 } },
-      { Title: "ВМК", City: "Владимир", Phone: "8 (4922) 44-03-03", Coordinates: { lat: 56.1291, lng: 40.4069 } },
-      { Title: "СТРОЙ РЕМ ГАРАНТ / ИП Лаптев", City: "Киров", Phone: "8 (8332) 74-61-09", Coordinates: { lat: 58.6036, lng: 49.668 } },
-      { Title: "ИП Козлова Д.А. (Строймат)", City: "Саратов", Phone: "8 (904) 24-40-700", Coordinates: { lat: 51.5336, lng: 46.0343 } },
-      { Title: 'ООО "Бизон бизнес"', City: "Ульяновск", Phone: "8 8422 97-44-00", Coordinates: { lat: 54.3187, lng: 48.3978 } },
-      { Title: 'ООО "ТОРУС"', City: "Санкт-Петербург", Phone: "8 (913) 200-88-10", Coordinates: { lat: 59.9343, lng: 30.3351 } },
-      { Title: 'Группа компаний "Проф.Ком"', City: "Мурманск", Phone: "", Coordinates: { lat: 68.9585, lng: 33.0827 } },
-      { Title: "Иновация Маркет", City: "Казань (Татарстан)", Phone: "8 (917) 260-29-89", Coordinates: { lat: 55.7887, lng: 49.1221 } },
-      { Title: 'ООО "ЭкспортНефтеСнаб"', City: "Уфа", Phone: "8 (905) 35-35-006", Coordinates: { lat: 54.7388, lng: 55.9721 } },
-      { Title: 'ООО "Стройторг"', City: "Красноярск", Phone: "+7 391 2-051-051", Coordinates: { lat: 56.0153, lng: 92.8932 } },
-      { Title: "Агреман", City: "Ярославль", Phone: "+7 (915) 988-80-25", Coordinates: { lat: 57.6261, lng: 39.8845 } },
-      { Title: "Строймат (ББК-Строй)", City: "Воронеж", Phone: "8 (900) 950-07-14", Coordinates: { lat: 51.6755, lng: 39.2089 } },
-      { Title: 'ООО "СПЕЦОМ"', City: "Краснодар", Phone: "8 (917) 127-43-00", Address: "г. Краснодар, Ростовское шоссе, 26/1", Coordinates: { lat: 45.0355, lng: 38.975 } },
+      { Title: "УРАЛСТРОЙПАРТНЕР", City: "Челябинск", Phone: "8 (351) 700-74-44", Email: "uralstroypartner@mail.ru", Coordinates: { lat: 55.1644, lng: 61.4368 } },
+      { Title: "Склад", City: "Москва", Phone: "+7 (495) 240-83-05", Email: "asfalt@novtecas.ru", Coordinates: { lat: 55.7558, lng: 37.6173 } },
+      { Title: 'ООО "Строительная Помощь"', City: "Н. Новгород", Phone: "(831) 415-55-59, +7 951 918-9132", Email: "help-2009@mail.ru", Coordinates: { lat: 56.2965, lng: 43.9361 } },
+      { Title: "Новая Хатка", City: "Минск", Phone: "8 (017) 227-05-21, 8 (044) 743-51-22", Email: "tc_2010@list.ru", Coordinates: { lat: 53.9006, lng: 27.559 } },
+      { Title: "ТЕРМ СТРОЙ ИНВЕСТ", City: "Минск", Phone: "", Email: "liv-ik@mail.ru", Coordinates: { lat: 53.9006, lng: 27.559 } },
+      { Title: "ВМК", City: "Владимир", Phone: "8 (4922) 44-03-03, 44-12-12, 54-59-23", Email: "v_26@rambler.ru", Coordinates: { lat: 56.1291, lng: 40.4069 } },
+      { Title: "СТРОЙ РЕМ ГАРАНТ / ИП Лаптев", City: "Киров", Phone: "8 (8332) 74-61-09, 8 (964) 256-61-09", Email: "srg43@mail.ru", Coordinates: { lat: 58.6036, lng: 49.668 } },
+      { Title: "ИП Козлова Д.А. (Строймат)", City: "Саратов", Phone: "8 (904) 24-40-700", Email: "elena.bsm2009@mail.ru", Coordinates: { lat: 51.5336, lng: 46.0343 } },
+      { Title: 'ООО "ТИТ"', City: "Саратов", Phone: "+7 937 802-50-34", Email: "shyrypov1@mail.ru", Coordinates: { lat: 51.5336, lng: 46.0343 } },
+      { Title: 'ООО "Бизон бизнес"', City: "Ульяновск", Phone: "8 (8422) 97-44-00", Email: "bizonbiznes@mail.ru", Coordinates: { lat: 54.3187, lng: 48.3978 } },
+      { Title: 'ООО "ТОРУС"', City: "Санкт-Петербург", Phone: "8 (913) 200-88-10, 8 (999) 463-45-13", Email: "112@torus.spb.ru", Coordinates: { lat: 59.9343, lng: 30.3351 } },
+      { Title: 'ООО "Мирков"', City: "СЗФО", Phone: "", Email: "mirronova@mail.ru", Coordinates: { lat: 59.9343, lng: 30.3351 } },
+      { Title: 'Группа компаний "Проф.Ком"', City: "Мурманск", Phone: "", Email: "reklama@prof-kom.ru", Coordinates: { lat: 68.9585, lng: 33.0827 } },
+      { Title: "Иновация Маркет", City: "Татарстан", Phone: "8 (917) 260-29-89", Email: "inn-market@mail.ru", Coordinates: { lat: 55.7887, lng: 49.1221 } },
+      { Title: 'ООО "Велес"', City: "Татарстан", Phone: "", Email: "oooveles2010@gmail.com", Coordinates: { lat: 55.7887, lng: 49.1221 } },
+      { Title: "ТК БАХМАЧ", City: "Набережные Челны", Phone: "8 (8552) 36-90-91, 36-90-92, 8 (951) 896-47-24, 8 (952) 037-97-47", Email: "bahmach08@mail.ru", Coordinates: { lat: 55.7431, lng: 52.3954 } },
+      { Title: 'ООО "ЭкспортНефтеСнаб"', City: "Уфа", Phone: "8 (905) 35-35-006", Email: "natalirmal@mail.ru", Coordinates: { lat: 54.7388, lng: 55.9721 } },
+      { Title: 'ООО "Стройторг"', City: "Красноярск", Phone: "+7 391 2-051-051, +7 391 276-81-47, +7 953 585-42-42", Email: "st-124@mail.ru", Coordinates: { lat: 56.0153, lng: 92.8932 } },
+      { Title: "ТЕХНО-СТИЛ", City: "Ижевск", Phone: "", Email: "technosteel59@gmail.com", Coordinates: { lat: 56.8527, lng: 53.2114 } },
+      { Title: "Агреман", City: "Ярославль", Phone: "+7 (915) 988-80-25, +7 (980) 700-06-38, +7 (4852) 48-11-60 (доб. 803)", Email: "belkova@agreman.ru", Coordinates: { lat: 57.6261, lng: 39.8845 } },
+      { Title: "Строймат (ББК-Строй)", City: "Воронеж", Phone: "8 (900) 950-07-14, 8 (900) 950-14-45", Email: "bbk-stroi@yandex.ru", Coordinates: { lat: 51.6755, lng: 39.2089 } },
+      { Title: 'ООО "ББК-Строй"', City: "Воронеж", Phone: "8 (920) 450-32-15", Email: "bbk-stroi@yandex.ru", Coordinates: { lat: 51.6755, lng: 39.2089 } },
+      { Title: 'ООО "СПЕЦОМ"', City: "Краснодар", Phone: "8 (917) 127-43-00", Email: "specom163@yandex.ru", Coordinates: { lat: 45.0355, lng: 38.975 } },
       { Title: 'ООО "ТОРУС"', City: "Новосибирск", Phone: "", Coordinates: { lat: 55.0084, lng: 82.9357 } },
-      { Title: 'ООО "Термотехника"', City: "Самарская обл.", Phone: "+7 (937) 072-63-22", Coordinates: { lat: 53.5075, lng: 49.4198 } },
-      { Title: "Регион-Снабжение", City: "Калининград", Phone: "8 (906) 213-01-23", Coordinates: { lat: 54.7104, lng: 20.4522 } },
-      { Title: 'ООО "МДА-КОМПЛЕКТ"', City: "Омск", Phone: "8 (965) 982-86-07", Coordinates: { lat: 54.9885, lng: 73.3242 } },
-      { Title: 'ООО "Герметик-УНИВЕРСАЛ"', City: "Пенза", Phone: "(8412) 30-66-38", Coordinates: { lat: 53.1959, lng: 45.0183 } },
-      { Title: "БОРА", City: "Ростов-на-Дону", Phone: "8 (918) 555-61-86", Address: "пр-т Шолохова, 304", Coordinates: { lat: 47.2357, lng: 39.7015 } },
-      { Title: "ЭНС ЭкспортНефтеСнаб", City: "Оренбург", Phone: "8 905 35-35-006", Coordinates: { lat: 51.7682, lng: 55.0969 } },
+      { Title: 'ООО "Термотехника"', City: "Тольятти", Phone: "+7 (937) 072-63-22, +7 (927) 209-79-86", Email: "t_tex@bk.ru", Coordinates: { lat: 53.5075, lng: 49.4198 } },
+      { Title: "Регион-Снабжение", City: "Калининград", Phone: "8 (906) 213-01-23, 8 (401) 257-99-72", Email: "fg@region-snab.com", Coordinates: { lat: 54.7104, lng: 20.4522 } },
+      { Title: 'ООО "ФОРТЕЦИЯ"', City: "Калининград", Phone: "8 (4012) 70-25-70", Email: "brit@baltneft.info", Coordinates: { lat: 54.7104, lng: 20.4522 } },
+      { Title: 'ООО "МДА-КОМПЛЕКТ"', City: "Омск", Phone: "8 (965) 982-86-07", Email: "cool.marukov@mail.ru", Coordinates: { lat: 54.9885, lng: 73.3242 } },
+      { Title: 'ООО "Герметик-УНИВЕРСАЛ"', City: "Пенза", Phone: "(8412) 30-66-38, 8 (903) 323-66-38", Email: "Germetik58@mail.ru", Coordinates: { lat: 53.1959, lng: 45.0183 } },
+      { Title: "БОРА", City: "Ростов-на-Дону", Phone: "8 (918) 555-61-86, +7 929 816-61-73", Email: "bora_reg@mail.ru", Coordinates: { lat: 47.2357, lng: 39.7015 } },
+      { Title: "ЭНС ЭкспортНефтеСнаб", City: "Оренбург", Phone: "8 (905) 35-35-006", Email: "natalirmal@mail.ru", Coordinates: { lat: 51.7682, lng: 55.0969 } },
+      { Title: "СтройРесурс", City: "Курск", Phone: "8 (961) 190-58-85", Email: "polivoda@stroyresurs46.ru", Coordinates: { lat: 51.7373, lng: 36.1874 } },
+      { Title: "СтройРесурс", City: "Белгород", Phone: "8 (961) 190-58-85", Email: "polivoda@stroyresurs46.ru", Coordinates: { lat: 50.5997, lng: 36.5876 } },
+      { Title: 'ООО "СПЕЦОМ"', City: "Волгоград", Phone: "8 (917) 127-43-00", Email: "specom163@yandex.ru", Coordinates: { lat: 48.7194, lng: 44.5018 } },
+      { Title: 'ООО "СПЕЦОМ"', City: "Астрахань", Phone: "8 (917) 127-43-00", Email: "specom163@yandex.ru", Coordinates: { lat: 46.3497, lng: 48.0408 } },
+      { Title: "ИП Пеньков / Эренс", City: "Орел", Phone: "8 (4862) 47-65-65, 75-07-11, 71-48-01 (2,3,4)", Email: "eklevtcova@57.leso-torg.ru", Coordinates: { lat: 52.9651, lng: 36.0785 } },
+      { Title: "RemontDoma / ИП Николаевский", City: "Смоленск", Phone: "8 (920) 310-10-36", Email: "al@rd24.net", Coordinates: { lat: 54.7903, lng: 32.0503 } },
     ];
 
     for (const d of dealersData) {
@@ -704,6 +988,7 @@ export default {
 
     strapi.log.info("Seed: initial content created successfully!");
     strapi.log.info(`  - ${productsData.length} products`);
+    strapi.log.info(`  - ${reviewCount} reviews`);
     strapi.log.info(`  - ${dealersData.length} dealers`);
     strapi.log.info(`  - ${portfolioData.length} portfolio items`);
     strapi.log.info(`  - ${articlesData.length} media items`);
