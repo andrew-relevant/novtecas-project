@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 
@@ -12,8 +13,16 @@ interface ProductCardProps {
 }
 
 export function ProductCard({ product, onBuyClick }: ProductCardProps) {
-  const { Title, Slug, Short_Description, Price_Rub, Unit_of_Measure, Image: img } =
-    product;
+  const {
+    Title,
+    Slug,
+    Short_Description_Preview,
+    Price_Rub,
+    Unit_of_Measure,
+    Image: img,
+    Show_Price_Note,
+    Price_Note,
+  } = product;
   const imageUrl = getStrapiMedia(img?.url ?? null);
 
   return (
@@ -42,35 +51,46 @@ export function ProductCard({ product, onBuyClick }: ProductCardProps) {
             {Title}
           </h3>
         </Link>
-        {Short_Description && (
+        {Short_Description_Preview && (
           <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">
-            {Short_Description}
+            {Short_Description_Preview}
           </p>
         )}
-        <div className="mt-auto flex items-center justify-between gap-2 pt-3">
-          <div className="text-sm font-medium">
-            {Price_Rub ? (
-              <>
-                {Price_Rub.toLocaleString("ru-RU")} ₽
-                {Unit_of_Measure && (
-                  <span className="text-muted-foreground">
-                    /{Unit_of_Measure}
-                  </span>
-                )}
-              </>
-            ) : (
-              <span className="text-muted-foreground">Цена по запросу</span>
+        <div className="mt-auto pt-3">
+          <div className="min-h-[1.5rem]">
+            {Show_Price_Note && Price_Note && (
+              <Badge variant="secondary" className="bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300">
+                {Price_Note}
+              </Badge>
             )}
           </div>
-          <Button
-            size="sm"
-            onClick={(e) => {
-              e.preventDefault();
-              onBuyClick?.(Title);
-            }}
-          >
-            Купить
-          </Button>
+          <div className="mt-2 flex items-center justify-between gap-2">
+            <div className="text-sm font-medium">
+              {Price_Rub ? (
+                <>
+                  <span className="text-3xl">
+                    {Price_Rub.toLocaleString("ru-RU")} ₽
+                  </span>
+                  {Unit_of_Measure && (
+                    <span className="text-muted-foreground">
+                      /{Unit_of_Measure}
+                    </span>
+                  )}
+                </>
+              ) : (
+                <span className="text-muted-foreground">Цена по запросу</span>
+              )}
+            </div>
+            <Button
+              size="sm"
+              onClick={(e) => {
+                e.preventDefault();
+                onBuyClick?.(Title);
+              }}
+            >
+              Купить
+            </Button>
+          </div>
         </div>
       </CardContent>
     </Card>

@@ -16,13 +16,19 @@
       "type": "string",
       "required": true
     },
+    "H1": {
+      "type": "string"
+    },
     "Slug": {
       "type": "uid",
       "targetField": "Title",
       "required": true
     },
-    "Short_Description": {
+    "Short_Description_Preview": {
       "type": "text"
+    },
+    "Short_Description": {
+      "type": "richtext"
     },
     "Price_Rub": {
       "type": "decimal"

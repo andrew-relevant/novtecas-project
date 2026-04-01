@@ -1032,6 +1032,7 @@ export interface ApiProductProduct extends Struct.CollectionTypeSchema {
       Schema.Attribute.Private;
     Full_Description: Schema.Attribute.RichText;
     Gallery: Schema.Attribute.Media<'images' | 'videos', true>;
+    H1: Schema.Attribute.String;
     Image: Schema.Attribute.Media<'images'>;
     isCustomOrder: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<false>;
     isFeatured: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<false>;
@@ -1051,7 +1052,8 @@ export interface ApiProductProduct extends Struct.CollectionTypeSchema {
     >;
     reviews: Schema.Attribute.Relation<'oneToMany', 'api::review.review'>;
     seo: Schema.Attribute.Component<'shared.seo', false>;
-    Short_Description: Schema.Attribute.Text;
+    Short_Description: Schema.Attribute.RichText;
+    Short_Description_Preview: Schema.Attribute.Text;
     Show_Price_Note: Schema.Attribute.Boolean &
       Schema.Attribute.DefaultTo<false>;
     Slug: Schema.Attribute.UID<'Title'> & Schema.Attribute.Required;

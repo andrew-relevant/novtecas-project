@@ -1,12 +1,15 @@
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { Breadcrumbs } from "@/components/breadcrumbs";
+import { Calculator } from "@/components/calculator";
 import { ProductCarousel } from "@/components/product-carousel";
 import { RichText } from "@/components/rich-text";
 
+import { Badge } from "@/components/ui/badge";
 import { fetchStrapi, getStrapiMedia } from "@/lib/strapi";
 import type { StrapiResponse, Product } from "@/lib/types";
-import { ProductDetailClient } from "./product-detail-client";
+import { RelatedProducts } from "@/components/related-products";
+import { ReviewsSection } from "@/components/reviews-section";
 import { BuyButton } from "@/components/buy-button";
 
 interface ProductPageProps {
@@ -41,17 +44,17 @@ export async function generateMetadata({
   const product = await getProduct(slug);
   if (!product) return { title: "Товар не найден" };
 
-  const { Title, Short_Description, seo, Image: img } = product;
+  const { Title, Short_Description_Preview, seo, Image: img } = product;
   const ogImage = getStrapiMedia(
     seo?.ogImage?.url ?? img?.url ?? null,
   );
 
   return {
     title: seo?.metaTitle ?? Title,
-    description: seo?.metaDescription ?? Short_Description ?? undefined,
+    description: seo?.metaDescription ?? Short_Description_Preview ?? undefined,
     openGraph: {
       title: seo?.metaTitle ?? Title,
-      description: seo?.metaDescription ?? Short_Description ?? undefined,
+      description: seo?.metaDescription ?? Short_Description_Preview ?? undefined,
       images: ogImage ? [ogImage] : undefined,
     },
   };
@@ -64,6 +67,8 @@ export default async function ProductPage({ params }: ProductPageProps) {
 
   const {
     Title,
+    H1,
+    Short_Description_Preview,
     Short_Description,
     Price_Rub,
     Unit_of_Measure,
@@ -122,19 +127,28 @@ export default async function ProductPage({ params }: ProductPageProps) {
 
         {/* Right: product info */}
         <div>
-          <h1 className="text-3xl font-bold">{Title}</h1>
+          <h1 className="text-3xl font-bold">{H1 || Title}</h1>
           {Short_Description && (
-            <p className="mt-3 text-muted-foreground">{Short_Description}</p>
+            <div className="mt-3 text-muted-foreground">
+              <RichText content={Short_Description} />
+            </div>
           )}
 
-          <div className="mt-6 space-y-2">
+          {Weight && (
+            <p className="mt-4 text-sm text-muted-foreground">
+              Вес: <span className="font-medium text-foreground">{Weight}</span>
+            </p>
+          )}
+
+          <div className="mt-4">
             <div className="flex items-center gap-4">
               {Price_Rub != null && (
-                <p className="text-2xl font-bold">
-                  {Price_Rub.toLocaleString("ru-RU")} ₽
-                  {Show_Price_Note && Price_Note && <sup>*</sup>}
+                <p className="font-medium">
+                  <span className="text-3xl font-bold">
+                    {Price_Rub.toLocaleString("ru-RU")} ₽
+                  </span>
                   {Unit_of_Measure && (
-                    <span className="text-base font-normal text-muted-foreground">
+                    <span className="text-sm text-muted-foreground">
                       /{Unit_of_Measure}
                     </span>
                   )}
@@ -143,9 +157,11 @@ export default async function ProductPage({ params }: ProductPageProps) {
               <BuyButton productTitle={Title} />
             </div>
             {Show_Price_Note && Price_Note && (
-              <p className="mt-4 text-xs italic text-muted-foreground">
-                * {Price_Note}
-              </p>
+              <div className="mt-2">
+                <Badge variant="secondary" className="bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300">
+                  {Price_Note}
+                </Badge>
+              </div>
             )}
           </div>
 
@@ -192,6 +208,10 @@ export default async function ProductPage({ params }: ProductPageProps) {
         </div>
       </div>
 
+      <div className="mt-8">
+        <Calculator />
+      </div>
+
       {/* Full description */}
       {Full_Description && (
         <section className="mt-12">
@@ -200,12 +220,11 @@ export default async function ProductPage({ params }: ProductPageProps) {
         </section>
       )}
 
-      {/* Client-side interactive parts */}
-      <ProductDetailClient
+      <RelatedProducts products={Related_Products ?? []} />
+
+      <ReviewsSection
         productId={product.documentId}
-        productTitle={Title}
         reviews={publishedReviews}
-        relatedProducts={Related_Products ?? []}
       />
     </div>
   );

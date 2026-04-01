@@ -61,7 +61,9 @@ export interface Product {
   id: number;
   documentId: string;
   Title: string;
+  H1: string | null;
   Slug: string;
+  Short_Description_Preview: string | null;
   Short_Description: string | null;
   Price_Rub: number | null;
   Unit_of_Measure: string | null;

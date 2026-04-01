@@ -12,6 +12,17 @@ const MIME_TYPES: Record<string, string> = {
   ".pdf": "application/pdf",
 };
 
+function textToRichText(value?: string): string | undefined {
+  if (value == null) return undefined;
+  const trimmed = value.trim();
+  if (!trimmed) return "";
+  const escaped = trimmed
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;");
+  return `<p>${escaped.replaceAll("\n", "<br/>")}</p>`;
+}
+
 /** Загружает один файл из src/seeds/images/ в Strapi Media Library.
  *  Если файл не найден — возвращает null (поле остаётся пустым). */
 async function uploadSeedFile(
@@ -175,111 +186,392 @@ async function ensureAdminUser(strapi) {
   strapi.log.info(`Admin user created: ${email}`);
 }
 
-function isFieldCell(cell: any, name: string) {
-  return cell === name || (cell && typeof cell === "object" && cell.name === name);
+function buildDefaultMetadatas(strapi: any, uid: string): Record<string, any> {
+  const contentType = strapi.contentType(uid);
+  const attributes = contentType?.attributes || {};
+  const metadatas: Record<string, any> = {};
+
+  const NON_SORTABLE = new Set(["richtext", "text", "json", "media", "component", "dynamiczone", "relation"]);
+  const NON_SEARCHABLE = new Set(["json", "media", "component", "dynamiczone"]);
+
+  const systemFields: Record<string, any> = {
+    id: { edit: {}, list: { label: "id", searchable: true, sortable: true } },
+    documentId: { edit: {}, list: { label: "documentId", searchable: false, sortable: false } },
+    createdAt: { edit: { label: "createdAt", description: "", placeholder: "", visible: false, editable: true }, list: { label: "createdAt", searchable: true, sortable: true } },
+    updatedAt: { edit: { label: "updatedAt", description: "", placeholder: "", visible: false, editable: true }, list: { label: "updatedAt", searchable: true, sortable: true } },
+    publishedAt: { edit: { label: "publishedAt", description: "", placeholder: "", visible: false, editable: true }, list: { label: "publishedAt", searchable: true, sortable: true } },
+    createdBy: { edit: { label: "createdBy", description: "", placeholder: "", visible: false, editable: true, mainField: "firstname" }, list: { label: "createdBy", searchable: true, sortable: true } },
+    updatedBy: { edit: { label: "updatedBy", description: "", placeholder: "", visible: false, editable: true, mainField: "firstname" }, list: { label: "updatedBy", searchable: true, sortable: true } },
+  };
+  Object.assign(metadatas, systemFields);
+
+  for (const [name, schema] of Object.entries<any>(attributes)) {
+    const type: string = schema.type || "";
+    let mainField: string | undefined;
+    if (type === "relation" && schema.target) {
+      try {
+        const targetCT = strapi.contentType(schema.target);
+        const first = Object.entries<any>(targetCT.attributes).find(([, s]) => s.type === "string");
+        mainField = first ? first[0] : "id";
+      } catch { mainField = "id"; }
+    }
+    metadatas[name] = {
+      edit: { label: name, description: "", placeholder: "", visible: true, editable: true, ...(mainField ? { mainField } : {}) },
+      list: { label: name, searchable: !NON_SEARCHABLE.has(type), sortable: !NON_SORTABLE.has(type) },
+    };
+  }
+  return metadatas;
 }
 
-function removeFieldFromLayout(layout: any, fieldName: string): any | null {
-  if (!Array.isArray(layout)) return null;
+async function configureContentType(
+  strapi: any,
+  uid: string,
+  config: {
+    settings?: Record<string, any>;
+    metadatas?: Record<string, { edit?: Record<string, any>; list?: Record<string, any> }>;
+    layouts?: { list?: string[]; edit?: { name: string; size: number }[][] };
+  }
+) {
+  const store = strapi.store({ type: "plugin", name: "content_manager" });
+  const key = `configuration_content_types::${uid}`;
+  let value = await store.get({ key });
 
-  for (let i = 0; i < layout.length; i++) {
-    const item = layout[i];
-    if (isFieldCell(item, fieldName)) {
-      return layout.splice(i, 1)[0];
-    }
-
-    if (Array.isArray(item)) {
-      const removed = removeFieldFromLayout(item, fieldName);
-      if (removed) return removed;
-      continue;
-    }
-
-    if (item && typeof item === "object") {
-      for (const key of Object.keys(item)) {
-        const value = (item as any)[key];
-        if (!Array.isArray(value)) continue;
-        const removed = removeFieldFromLayout(value, fieldName);
-        if (removed) return removed;
-      }
-    }
+  if (!value) {
+    const contentType = strapi.contentType(uid);
+    const attrNames = Object.keys(contentType?.attributes || {});
+    value = {
+      settings: {
+        bulkable: true, filterable: true, searchable: true, pageSize: 10,
+        mainField: attrNames[0] || "id",
+        defaultSortBy: attrNames[0] || "id",
+        defaultSortOrder: "ASC",
+      },
+      metadatas: buildDefaultMetadatas(strapi, uid),
+      layouts: {
+        list: attrNames.slice(0, 4),
+        edit: attrNames.map((name) => [{ name, size: 6 }]),
+      },
+    };
   }
 
-  return null;
+  if (config.settings) value.settings = { ...value.settings, ...config.settings };
+  if (config.metadatas) {
+    for (const [field, meta] of Object.entries(config.metadatas)) {
+      if (!value.metadatas[field]) value.metadatas[field] = {};
+      if (meta.edit) value.metadatas[field].edit = { ...value.metadatas[field]?.edit, ...meta.edit };
+      if (meta.list) value.metadatas[field].list = { ...value.metadatas[field]?.list, ...meta.list };
+    }
+  }
+  if (config.layouts) {
+    if (config.layouts.list) value.layouts.list = config.layouts.list;
+    if (config.layouts.edit) value.layouts.edit = config.layouts.edit;
+  }
+
+  await store.set({ key, value });
 }
 
-function findRowWithField(layout: any, fieldName: string): any[] | null {
-  if (!Array.isArray(layout)) return null;
+async function configureAdminLayouts(strapi: any) {
+  const l = (label: string) => ({ edit: { label }, list: { label } });
 
-  // Often a "row" is an array of cells
-  if (layout.some((cell) => isFieldCell(cell, fieldName))) return layout;
+  await configureContentType(strapi, "api::product.product", {
+    settings: { mainField: "Title", defaultSortBy: "sortOrder", defaultSortOrder: "ASC", pageSize: 25 },
+    metadatas: {
+      Title: l("Название"), H1: l("Заголовок H1"), Slug: l("URL"),
+      Short_Description_Preview: l("Краткое описание (превью)"),
+      Short_Description: l("Краткое описание"),
+      Price_Rub: l("Цена (₽)"), Unit_of_Measure: l("Ед. измерения"), Weight: l("Вес"),
+      Image: l("Изображение"), Gallery: l("Галерея"),
+      Full_Description: l("Полное описание"), Specs: l("Характеристики"),
+      isFeatured: l("Популярный"), isCustomOrder: l("Под заказ"),
+      priceTiers: l("Ценовые уровни"), category: l("Категория"),
+      Related_Products: l("Связанные товары"), reviews: l("Отзывы"), seo: l("SEO"),
+      Show_Price_Note: l("Показать примечание"), Price_Note: l("Примечание к цене"),
+      sortOrder: l("Сортировка"),
+    },
+    layouts: {
+      list: ["Title", "Price_Rub", "Weight", "category", "isFeatured", "sortOrder"],
+      edit: [
+        [{ name: "Title", size: 8 }, { name: "Slug", size: 4 }],
+        [{ name: "H1", size: 12 }],
+        [{ name: "Price_Rub", size: 3 }, { name: "Unit_of_Measure", size: 3 }, { name: "Weight", size: 3 }, { name: "sortOrder", size: 3 }],
+        [{ name: "category", size: 6 }, { name: "Related_Products", size: 6 }],
+        [{ name: "isFeatured", size: 3 }, { name: "isCustomOrder", size: 3 }, { name: "Show_Price_Note", size: 3 }],
+        [{ name: "Price_Note", size: 12 }],
+        [{ name: "Short_Description_Preview", size: 12 }],
+        [{ name: "Image", size: 12 }],
+        [{ name: "Gallery", size: 12 }],
+        [{ name: "Short_Description", size: 12 }],
+        [{ name: "Full_Description", size: 12 }],
+        [{ name: "Specs", size: 12 }],
+        [{ name: "priceTiers", size: 12 }],
+        [{ name: "seo", size: 12 }],
+      ],
+    },
+  });
 
-  for (const item of layout) {
-    if (Array.isArray(item)) {
-      const found = findRowWithField(item, fieldName);
-      if (found) return found;
-      continue;
-    }
+  await configureContentType(strapi, "api::product-category.product-category", {
+    settings: { mainField: "name" },
+    metadatas: {
+      name: l("Название"), slug: l("URL"), description: l("Описание"), products: l("Товары"),
+    },
+    layouts: {
+      list: ["name", "slug"],
+      edit: [
+        [{ name: "name", size: 6 }, { name: "slug", size: 6 }],
+        [{ name: "description", size: 12 }],
+        [{ name: "products", size: 12 }],
+      ],
+    },
+  });
 
-    if (item && typeof item === "object") {
-      for (const key of Object.keys(item)) {
-        const value = (item as any)[key];
-        if (!Array.isArray(value)) continue;
-        const found = findRowWithField(value, fieldName);
-        if (found) return found;
-      }
-    }
-  }
+  await configureContentType(strapi, "api::dealer.dealer", {
+    settings: { mainField: "Title", defaultSortBy: "City", defaultSortOrder: "ASC", pageSize: 25 },
+    metadatas: {
+      Title: l("Название"), City: l("Город"), Address: l("Адрес"),
+      Phone: l("Телефон"), Email: l("Email"), Coordinates: l("Координаты"),
+      Contact_Info: l("Контактная информация"), isActive: l("Активен"),
+    },
+    layouts: {
+      list: ["Title", "City", "Phone", "Email", "isActive"],
+      edit: [
+        [{ name: "Title", size: 8 }, { name: "isActive", size: 4 }],
+        [{ name: "City", size: 6 }, { name: "Address", size: 6 }],
+        [{ name: "Phone", size: 6 }, { name: "Email", size: 6 }],
+        [{ name: "Coordinates", size: 12 }],
+        [{ name: "Contact_Info", size: 12 }],
+      ],
+    },
+  });
 
-  return null;
-}
+  await configureContentType(strapi, "api::review.review", {
+    settings: { mainField: "author", defaultSortBy: "date", defaultSortOrder: "DESC", pageSize: 25 },
+    metadatas: {
+      author: l("Автор"), text: l("Текст отзыва"), rating: l("Оценка"),
+      product: l("Товар"), isPublished: l("Опубликован"), date: l("Дата"),
+    },
+    layouts: {
+      list: ["author", "product", "date", "isPublished"],
+      edit: [
+        [{ name: "author", size: 6 }, { name: "date", size: 6 }],
+        [{ name: "product", size: 6 }, { name: "rating", size: 3 }, { name: "isPublished", size: 3 }],
+        [{ name: "text", size: 12 }],
+      ],
+    },
+  });
 
-async function ensureDealerEmailNextToPhoneInAdmin(strapi: any) {
-  try {
-    const store = strapi.store({ type: "plugin", name: "content-manager" });
-    const key = "content_types::api::dealer.dealer";
-    const value = await store.get({ key });
+  await configureContentType(strapi, "api::lead.lead", {
+    settings: { mainField: "name", defaultSortBy: "createdAt", defaultSortOrder: "DESC", pageSize: 25 },
+    metadatas: {
+      type: l("Тип заявки"), name: l("Имя"), phone: l("Телефон"),
+      email: l("Email"), company: l("Компания"), message: l("Сообщение"),
+      product: l("Товар"), attachment: l("Вложение"),
+    },
+    layouts: {
+      list: ["name", "type", "phone", "email", "createdAt"],
+      edit: [
+        [{ name: "type", size: 4 }, { name: "name", size: 4 }, { name: "company", size: 4 }],
+        [{ name: "phone", size: 6 }, { name: "email", size: 6 }],
+        [{ name: "product", size: 12 }],
+        [{ name: "message", size: 12 }],
+        [{ name: "attachment", size: 12 }],
+      ],
+    },
+  });
 
-    if (!value?.layouts?.edit) return;
+  await configureContentType(strapi, "api::city.city", {
+    settings: { mainField: "name", defaultSortBy: "sortOrder", defaultSortOrder: "ASC", pageSize: 50 },
+    metadatas: {
+      name: l("Город"), slug: l("URL"), domain: l("Домен"),
+      namePrepositional: l("Предложный падеж"), nameDative: l("Дательный падеж"),
+      phones: l("Телефоны"), postalCode: l("Индекс"),
+      address: l("Адрес"), warehouseAddress: l("Адрес склада"),
+      mapLat: l("Широта"), mapLng: l("Долгота"),
+      sortOrder: l("Сортировка"), isDefault: l("По умолчанию"),
+    },
+    layouts: {
+      list: ["name", "domain", "sortOrder", "isDefault"],
+      edit: [
+        [{ name: "name", size: 4 }, { name: "slug", size: 4 }, { name: "domain", size: 4 }],
+        [{ name: "namePrepositional", size: 6 }, { name: "nameDative", size: 6 }],
+        [{ name: "postalCode", size: 4 }, { name: "sortOrder", size: 4 }, { name: "isDefault", size: 4 }],
+        [{ name: "address", size: 12 }],
+        [{ name: "warehouseAddress", size: 12 }],
+        [{ name: "phones", size: 12 }],
+        [{ name: "mapLat", size: 6 }, { name: "mapLng", size: 6 }],
+      ],
+    },
+  });
 
-    // Remove Email from wherever it currently is, then re-insert near Phone
-    const removedEmail =
-      removeFieldFromLayout(value.layouts.edit, "Email") ?? { name: "Email", size: 6 };
+  await configureContentType(strapi, "api::document.document", {
+    settings: { mainField: "Title", defaultSortBy: "sortOrder", defaultSortOrder: "ASC" },
+    metadatas: {
+      Title: l("Название"), File: l("Файл"), Category: l("Категория"),
+      Preview_Image: l("Превью"), sortOrder: l("Сортировка"),
+    },
+    layouts: {
+      list: ["Title", "Category", "sortOrder"],
+      edit: [
+        [{ name: "Title", size: 8 }, { name: "Category", size: 4 }],
+        [{ name: "sortOrder", size: 4 }],
+        [{ name: "Preview_Image", size: 12 }],
+        [{ name: "File", size: 12 }],
+      ],
+    },
+  });
 
-    const phoneRow = findRowWithField(value.layouts.edit, "Phone");
-    if (!phoneRow) {
-      // Fallback: avoid losing the field if layout is unexpected
-      if (Array.isArray(value.layouts.edit)) value.layouts.edit.push([removedEmail]);
-      await store.set({ key, value });
-      return;
-    }
+  await configureContentType(strapi, "api::media-item.media-item", {
+    settings: { mainField: "Title", defaultSortBy: "Date", defaultSortOrder: "DESC" },
+    metadatas: {
+      Title: l("Заголовок"), Slug: l("URL"), Date: l("Дата"), Type: l("Тип"),
+      Short_Text: l("Краткий текст"), Full_Text: l("Полный текст"),
+      Image_Preview: l("Превью"), Gallery: l("Галерея"),
+    },
+    layouts: {
+      list: ["Title", "Type", "Date"],
+      edit: [
+        [{ name: "Title", size: 8 }, { name: "Slug", size: 4 }],
+        [{ name: "Type", size: 6 }, { name: "Date", size: 6 }],
+        [{ name: "Short_Text", size: 12 }],
+        [{ name: "Image_Preview", size: 12 }],
+        [{ name: "Full_Text", size: 12 }],
+        [{ name: "Gallery", size: 12 }],
+      ],
+    },
+  });
 
-    const phoneIdx = phoneRow.findIndex((cell) => isFieldCell(cell, "Phone"));
-    const phoneCell = phoneIdx >= 0 ? phoneRow[phoneIdx] : null;
+  await configureContentType(strapi, "api::portfolio-item.portfolio-item", {
+    settings: { mainField: "Title", defaultSortBy: "Date", defaultSortOrder: "DESC" },
+    metadatas: {
+      Title: l("Название проекта"), Slug: l("URL"), Date: l("Дата"),
+      Short_Text: l("Краткое описание"), Full_Text: l("Полное описание"),
+      Image_Preview: l("Превью"), Gallery: l("Галерея"), Videos: l("Видео"),
+    },
+    layouts: {
+      list: ["Title", "Date"],
+      edit: [
+        [{ name: "Title", size: 8 }, { name: "Slug", size: 4 }],
+        [{ name: "Date", size: 6 }],
+        [{ name: "Short_Text", size: 12 }],
+        [{ name: "Image_Preview", size: 12 }],
+        [{ name: "Full_Text", size: 12 }],
+        [{ name: "Gallery", size: 12 }],
+        [{ name: "Videos", size: 12 }],
+      ],
+    },
+  });
 
-    // If Phone occupies full width, split it to make room for Email.
-    if (phoneCell && typeof phoneCell === "object" && phoneCell.size === 12) {
-      phoneCell.size = 6;
-      if (removedEmail && typeof removedEmail === "object" && removedEmail.size == null) {
-        removedEmail.size = 6;
-      }
-    }
+  await configureContentType(strapi, "api::partner.partner", {
+    settings: { mainField: "name", defaultSortBy: "sortOrder", defaultSortOrder: "ASC" },
+    metadatas: {
+      name: l("Название"), logo: l("Логотип"), url: l("Сайт"),
+      sortOrder: l("Сортировка"), isActive: l("Активен"),
+    },
+    layouts: {
+      list: ["name", "url", "sortOrder", "isActive"],
+      edit: [
+        [{ name: "name", size: 6 }, { name: "url", size: 6 }],
+        [{ name: "sortOrder", size: 6 }, { name: "isActive", size: 6 }],
+        [{ name: "logo", size: 12 }],
+      ],
+    },
+  });
 
-    // Insert Email right after Phone in the same row
-    phoneRow.splice(phoneIdx + 1, 0, removedEmail);
+  await configureContentType(strapi, "api::page.page", {
+    settings: { mainField: "title" },
+    metadatas: {
+      title: l("Заголовок"), slug: l("URL"), content: l("Содержимое"), seo: l("SEO"),
+    },
+    layouts: {
+      list: ["title", "slug"],
+      edit: [
+        [{ name: "title", size: 8 }, { name: "slug", size: 4 }],
+        [{ name: "content", size: 12 }],
+        [{ name: "seo", size: 12 }],
+      ],
+    },
+  });
 
-    await store.set({ key, value });
-  } catch (err) {
-    strapi.log.warn(
-      `Content Manager layout: не удалось разместить Email рядом с Phone для Dealer: ${err.message}`
-    );
-  }
+  await configureContentType(strapi, "api::home-page.home-page", {
+    metadatas: {
+      heroTitle: l("Заголовок баннера"), heroSubtitle: l("Подзаголовок баннера"),
+      heroVideo: l("Видео баннера"), heroPoster: l("Постер видео"),
+      aboutTitle: l("Блок «О компании» — заголовок"), aboutText: l("Блок «О компании» — текст"),
+      aboutCtaLabel: l("Кнопка «О компании» — текст"), aboutCtaHref: l("Кнопка «О компании» — ссылка"),
+      advantagesTitle: l("Блок «Преимущества» — заголовок"), advantages: l("Преимущества"),
+      applicationAreasTitle: l("Блок «Области применения» — заголовок"), applicationAreas: l("Области применения"),
+      productsTitle: l("Блок «Продукция» — заголовок"), productsSubtitle: l("Блок «Продукция» — подзаголовок"),
+      productsCtaLabel: l("Кнопка «Продукция» — текст"), productsCtaHref: l("Кнопка «Продукция» — ссылка"),
+      dealersTitle: l("Блок «Дилеры» — заголовок"), dealersText: l("Блок «Дилеры» — текст"),
+      dealersPhone: l("Телефон дилеров"), dealersCtaLabel: l("Кнопка «Дилеры» — текст"),
+    },
+    layouts: {
+      edit: [
+        [{ name: "heroTitle", size: 12 }],
+        [{ name: "heroSubtitle", size: 12 }],
+        [{ name: "heroVideo", size: 12 }],
+        [{ name: "heroPoster", size: 12 }],
+        [{ name: "aboutTitle", size: 12 }],
+        [{ name: "aboutText", size: 12 }],
+        [{ name: "aboutCtaLabel", size: 6 }, { name: "aboutCtaHref", size: 6 }],
+        [{ name: "advantagesTitle", size: 12 }],
+        [{ name: "advantages", size: 12 }],
+        [{ name: "applicationAreasTitle", size: 12 }],
+        [{ name: "applicationAreas", size: 12 }],
+        [{ name: "productsTitle", size: 12 }],
+        [{ name: "productsSubtitle", size: 12 }],
+        [{ name: "productsCtaLabel", size: 6 }, { name: "productsCtaHref", size: 6 }],
+        [{ name: "dealersTitle", size: 12 }],
+        [{ name: "dealersText", size: 12 }],
+        [{ name: "dealersPhone", size: 6 }, { name: "dealersCtaLabel", size: 6 }],
+      ],
+    },
+  });
+
+  await configureContentType(strapi, "api::page-about.page-about", {
+    metadatas: {
+      Intro_Text: l("Вводный текст"), Full_Text: l("Полный текст"),
+      Sidebar_Image: l("Изображение"), Requisites_Table: l("Реквизиты"),
+    },
+  });
+
+  await configureContentType(strapi, "api::page-production.page-production", {
+    metadatas: {
+      Intro_Text: l("Вводный текст"), Full_Text: l("Полный текст"), Gallery: l("Галерея"),
+    },
+  });
+
+  await configureContentType(strapi, "api::page-technology.page-technology", {
+    metadatas: { Full_Text: l("Содержимое") },
+  });
+
+  await configureContentType(strapi, "api::page-hydrophobic.page-hydrophobic", {
+    metadatas: { Full_Text: l("Содержимое") },
+  });
+
+  await configureContentType(strapi, "api::page-blacklist.page-blacklist", {
+    metadatas: { Text_Content: l("Содержимое") },
+  });
+
+  await configureContentType(strapi, "api::page-contacts.page-contacts", {
+    metadatas: { Contact_Info: l("Контактная информация"), departments: l("Отделы") },
+  });
+
+  await configureContentType(strapi, "api::page-dealers.page-dealers", {
+    metadatas: { Intro_Text: l("Вводный текст") },
+  });
+
+  await configureContentType(strapi, "api::site-setting.site-setting", {
+    metadatas: { logo: l("Логотип"), contacts: l("Контакты"), copyright: l("Копирайт") },
+  });
+
+  strapi.log.info("Admin panel layouts configured");
 }
 
 export default {
   async bootstrap({ strapi }) {
     await ensureAdminUser(strapi);
     await ensurePublicPermissions(strapi);
-    await ensureDealerEmailNextToPhoneInAdmin(strapi);
+    await configureAdminLayouts(strapi);
 
     const productCount = await strapi.documents("api::product.product").count();
     if (productCount > 0) {
@@ -303,83 +595,142 @@ export default {
     // imageFile:    обложка товара     → cms/src/seeds/images/<fileName>
     // galleryFiles: галерея (массив)   → cms/src/seeds/images/<fileName>
     // Отсутствующие файлы пропускаются без ошибок.
+    const commonShortDescription = textToRichText(
+      "Применяются гибкие скидки в зависимости от объемов закупки.\n" +
+        "Отправьте нам свою заявку указав продукт, объем закупки, фасовку, адрес доставки и с вашими реквизитами.\n" +
+        "Мы обязательно с вами свяжемся и предоставим вам предложение в течении суток"
+    );
+
     const productsData = [
       {
-        Title: "Холодный асфальт 35 кг (до 1000 кг)", Slug: "cold-asphalt-35kg-under-1000",
-        Short_Description: "Цена при оплате менее 1000 кг. Стандартная фасовка в полиэтиленовых мешках.",
-        Price_Rub: 680, Unit_of_Measure: "мешок", Weight: "35 кг", isFeatured: true, isCustomOrder: false, Show_Price_Note: true, Price_Note: "Уточняйте актуальную цену у менеджера", sortOrder: 100, category: catCold.documentId,
-        Full_Description: "<p>Холодный асфальт Perma Patch в полиэтиленовых мешках по 35 кг — стандартная упаковка, всегда в наличии на складе. Идеально подходит для ямочного ремонта дорог, тротуаров и парковок.</p><p>Состав может уплотняться даже при -27°С, сохраняя подвижность и качество материала.</p>",
+        Title: "Холодный асфальт 35 кг (до 1000 кг)", Slug: "cold-asphalt-35kg-under-1000",
+        Short_Description_Preview: "Цена при оплате менее 1000 кг. Стандартная фасовка в полиэтиленовых мешках.",
+        Price_Rub: 680, Unit_of_Measure: "мешок", Weight: "35 кг", isFeatured: true, isCustomOrder: false, Show_Price_Note: false, Price_Note: "Уточняйте актуальную цену у менеджера", sortOrder: 100, category: catCold.documentId,
+        Short_Description: commonShortDescription,
+        Full_Description: textToRichText(
+          "Асфальтобетонная смесь\n" +
+            "Perma Patch\n" +
+            "— это холодный асфальт, который модифицирован инновационным концентратом Perma-Patch. Данный материал предназначен для безопасного, надежного и быстрого ремонта дорожного полотна как летом, так и в осенне-зимний период.\n" +
+            "Использование холодного асфальта Perma Patch станет наилучшим решением при ремонте мостовых переходов, высокоскоростных автомагистралей, пешеходных дорожек и мн. др. Эту асфальтобетонную смесь можно смело назвать универсальной, так как она пригодна для проведения ремонтных работ при температуре от –30 °С до 49 °С. Ремонт может осуществляться в любое время года и при любых, даже самых неблагоприятных, погодных условиях.\n" +
+            "Приобрести асфальтобетонную смесь Perma Patch по оптимальным расценкам можно, обратившись в ООО «Новые Технологии Асфальта — NovTecAs». Для удобства наших заказчиков мы предлагаем продукцию в различных вариантах фасовки. Оформить заказ можно непосредственно на сайте компании."
+        ),
         priceTiers: [{ minQtyKg: 0, price: 680, label: "до 1000 кг" }, { minQtyKg: 1000, price: 640, label: "от 1000 кг" }, { minQtyKg: 5000, price: 610, label: "от 5000 кг" }],
         imageFile: "35kg.jpg",
         galleryFiles: ["35kg.jpg"],
       },
       {
-        Title: "Холодный асфальт 35 кг (от 1000 кг)", Slug: "cold-asphalt-35kg-from-1000",
-        Short_Description: "Цена при оплате более 1000 кг. Стандартная фасовка в полиэтиленовых мешках.",
-        Price_Rub: 640, Unit_of_Measure: "мешок", Weight: "35 кг", isFeatured: true, isCustomOrder: false, Show_Price_Note: true, Price_Note: "Уточняйте актуальную цену у менеджера", sortOrder: 200, category: catCold.documentId,
-        Full_Description: "<p>Холодный асфальт Perma Patch в мешках по 35 кг. Оптовая цена при заказе от 1000 кг. Стандартная упаковка, всегда в наличии.</p>",
+        Title: "Холодный асфальт 35 кг (от 1000 кг)", Slug: "cold-asphalt-35kg-from-1000",
+        Short_Description_Preview: "Цена при оплате более 1000 кг. Стандартная фасовка в полиэтиленовых мешках.",
+        Price_Rub: 640, Unit_of_Measure: "мешок", Weight: "35 кг", isFeatured: true, isCustomOrder: false, Show_Price_Note: false, Price_Note: "Уточняйте актуальную цену у менеджера", sortOrder: 200, category: catCold.documentId,
+        Short_Description: commonShortDescription,
+        Full_Description: textToRichText(
+          "Асфальтобетонная смесь\n" +
+            "Perma Patch\n" +
+            "— это холодный асфальт, который модифицирован инновационным концентратом Perma-Patch. Данный материал предназначен для безопасного, надежного и быстрого ремонта дорожного полотна как летом, так и в осенне-зимний период.\n" +
+            "Применение холодного асфальта Perma Patch станет наилучшим решением при ремонте мостовых переходов, высокоскоростных автомагистралей, укладке пешеходных дорожек и мн. др. Эту асфальтобетонную смесь можно смело назвать универсальной, так как она пригодна для проведения ремонтных работ при температуре от –30 °С до 49 °С. Ремонт дорожного покрытия может осуществляться в любое время года и при любых, даже самых неблагоприятных, погодных условиях.\n" +
+            "Благодаря использованию в качестве добавки концентрата Perma Patch холодная смесь приобретает большую прочность, значительно увеличиваются сроки хранения продукта без потери его качества.\n" +
+            "Холодный асфальт - купить от производителя\n" +
+            "Приобрести асфальтобетонную смесь Perma Patch по оптимальным расценкам можно, обратившись в ООО «Новые Технологии Асфальта — NovTecAs». Для удобства наших заказчиков мы предлагаем продукцию в различных вариантах фасовки. Оформить заказ можно непосредственно на сайте компании."
+        ),
         imageFile: "35kg.jpg",
         galleryFiles: ["35kg.jpg"],
       },
       {
-        Title: "Холодный асфальт 35 кг (от 5000кг)", Slug: "cold-asphalt-35kg-from-5000",
-        Short_Description: "Оптовая партия от 5000 кг. Максимально выгодная цена.",
-        Price_Rub: 610, Unit_of_Measure: "мешок", Weight: "35 кг", isFeatured: true, isCustomOrder: false, Show_Price_Note: true, Price_Note: "Уточняйте актуальную цену у менеджера", sortOrder: 300, category: catCold.documentId,
-        Full_Description: "<p>Холодный асфальт Perma Patch — лучшая цена при крупном опте от 5000 кг. Упаковка 35 кг, всегда в наличии.</p>",
+        Title: "Холодный асфальт 35 кг (от 5000 кг)", Slug: "cold-asphalt-35kg-from-5000",
+        Short_Description_Preview: "Оптовая партия от 5000 кг. Максимально выгодная цена.",
+        Price_Rub: 610, Unit_of_Measure: "мешок", Weight: "35 кг", isFeatured: true, isCustomOrder: false, Show_Price_Note: false, Price_Note: "Уточняйте актуальную цену у менеджера", sortOrder: 300, category: catCold.documentId,
+        Short_Description: commonShortDescription,
+        Full_Description: textToRichText(
+          "Асфальтобетонная смесь\n" +
+            "Perma Patch\n" +
+            "— это холодный асфальт, который модифицирован инновационным концентратом Perma-Patch. Данный материал предназначен для безопасного, надежного и быстрого ремонта дорожного полотна как летом, так и в осенне-зимний период.\n" +
+            "Использование холодного асфальта Perma Patch станет наилучшим решением при ремонте мостовых переходов, высокоскоростных автомагистралей, пешеходных дорожек и мн. др. Эту асфальтобетонную смесь можно смело назвать универсальной, так как она пригодна для проведения ремонтных работ при температуре от –30 °С до 49 °С. Ремонт может осуществляться в любое время года и при любых, даже самых неблагоприятных, погодных условиях.\n" +
+            "Приобрести асфальтобетонную смесь Perma Patch по оптимальным расценкам можно, обратившись в ООО «Новые Технологии Асфальта — NovTecAs». Для удобства наших заказчиков мы предлагаем продукцию в различных вариантах фасовки. Оформить заказ можно непосредственно на сайте компании."
+        ),
         imageFile: "35kg.jpg",
         galleryFiles: ["35kg.jpg"],
       },
       {
         Title: "Холодный асфальт 50 кг (полипропилен)", Slug: "cold-asphalt-50kg",
-        Short_Description: "Под спецзаказ при определённой партии. Полипропиленовые мешки.",
+        Short_Description_Preview: "Под спецзаказ при определённой партии. Полипропиленовые мешки.",
         Price_Rub: 760, Unit_of_Measure: "мешок", Weight: "50 кг", isFeatured: false, isCustomOrder: true, Show_Price_Note: true, Price_Note: "Уточняйте актуальную цену у менеджера", sortOrder: 400, category: catCold.documentId,
-        Full_Description: "<p>Холодный асфальт в полипропиленовых мешках по 50 кг. Производится под спецзаказ при определённой партии. Уточняйте актуальную цену у менеджера.</p>",
+        Short_Description: commonShortDescription,
+        Full_Description: textToRichText(
+          "Асфальтобетонная смесь\n" +
+            "Perma Patch\n" +
+            "— это холодный асфальт, который модифицирован инновационным концентратом Perma-Patch. Данный материал предназначен для безопасного, надежного и быстрого ремонта дорожного полотна как летом, так и в осенне-зимний период.\n" +
+            "Использование холодного асфальта Perma Patch станет наилучшим решением при ремонте мостовых переходов, высокоскоростных автомагистралей, пешеходных дорожек и мн. др. Эту асфальтобетонную смесь можно смело назвать универсальной, так как она пригодна для проведения ремонтных работ при температуре от –30 °С до 49 °С. Ремонт может осуществляться в любое время года и при любых, даже самых неблагоприятных, погодных условиях.\n" +
+            "Приобрести асфальтобетонную смесь Perma Patch по оптимальным расценкам можно, обратившись в ООО «Новые Технологии Асфальта — NovTecAs». Для удобства наших заказчиков мы предлагаем продукцию в различных вариантах фасовки. Оформить заказ можно непосредственно на сайте компании."
+        ),
         imageFile: "30-50kg.jpg",
         galleryFiles: ["30-50kg.jpg"],
       },
       {
         Title: "Холодный асфальт 30 кг (полипропилен)", Slug: "cold-asphalt-30kg",
-        Short_Description: "Под спецзаказ при определённой партии. Полипропиленовые мешки.",
+        Short_Description_Preview: "Под спецзаказ при определённой партии. Полипропиленовые мешки.",
         Price_Rub: 470, Unit_of_Measure: "мешок", Weight: "30 кг", isFeatured: false, isCustomOrder: true, Show_Price_Note: true, Price_Note: "Уточняйте актуальную цену у менеджера", sortOrder: 500, category: catCold.documentId,
-        Full_Description: "<p>Холодный асфальт Perma Patch в мешках по 30 кг. Фасовка в полипропилен под заказ.</p>",
+        Short_Description: commonShortDescription,
+        Full_Description: textToRichText(
+          "Асфальтобетонная смесь\n" +
+            "Perma Patch\n" +
+            "— это холодный асфальт, который модифицирован инновационным концентратом Perma-Patch. Данный материал предназначен для безопасного, надежного и быстрого ремонта дорожного полотна как летом, так и в осенне-зимний период.\n" +
+            "Использование холодного асфальта Perma Patch станет наилучшим решением при ремонте мостовых переходов, высокоскоростных автомагистралей, пешеходных дорожек и мн. др. Эту асфальтобетонную смесь можно смело назвать универсальной, так как она пригодна для проведения ремонтных работ при температуре от –30 °С до 49 °С. Ремонт может осуществляться в любое время года и при любых, даже самых неблагоприятных, погодных условиях.\n" +
+            "Приобрести асфальтобетонную смесь Perma Patch по оптимальным расценкам можно, обратившись в ООО «Новые Технологии Асфальта — NovTecAs». Для удобства наших заказчиков мы предлагаем продукцию в различных вариантах фасовки. Оформить заказ можно непосредственно на сайте компании."
+        ),
         imageFile: "30-50kg.jpg",
         galleryFiles: ["30-50kg.jpg"],
       },
       {
         Title: "Холодный асфальт 1000 кг (биг-бег)", Slug: "cold-asphalt-1000kg",
-        Short_Description: "Холодный асфальт Perma Patch в биг-бегах по 1000 кг.",
+        Short_Description_Preview: "Холодный асфальт Perma Patch в биг-бегах по 1000 кг.",
         Price_Rub: 17910, Unit_of_Measure: "тонна", Weight: "1000 кг", isFeatured: false, isCustomOrder: true, Show_Price_Note: true, Price_Note: "Уточняйте актуальную цену у менеджера", sortOrder: 600, category: catCold.documentId,
-        Full_Description: "<p>Холодный асфальт Perma Patch фасовка в биг-бегах по 1000 кг. Экономичный вариант для крупных объёмов работ.</p>",
+        Short_Description: commonShortDescription,
+        Full_Description: textToRichText(
+          "Perma Patch — это одна из самых современных марок холодного асфальта. Продукт представляет собой асфальтобетонную смесь с добавкой инновационного концентрата Perma-Patch, который позволяет осуществлять ремонт дорожного полотна максимально качественно и безопасно. Кроме того, McAsphalt Perma Patch позволяет свести к минимуму время проведения ремонтных работ.\n" +
+            "Холодный асфальт этой торговой марки — идеальное решение для любых типов ремонтных работ в области дорожного строительства. С помощью Perma Patch можно осуществлять ремонт высокоскоростных магистралей, тротуаров, пешеходных дорожек, мостовых переправ и многого другого.\n" +
+            "Благодаря новому материалу Perma-Patch можно вести ремонтные мероприятия в любое время года, даже при неблагоприятных погодных условиях. Продукт пригоден для работы в условиях низких и высоких температур (–30 — 49 °С). Заказать холодный асфальт Perma Patch в биг-бэгах по 1 т или в упаковке меньшего объема вы можете, обратившись в нашу компанию."
+        ),
         imageFile: "1000kg.jpg",
         galleryFiles: ["1000kg.jpg"],
       },
       {
         Title: "Красный холодный асфальт Perma Patch Color, фасовка 1000 кг", Slug: "red-cold-asphalt-bags",
-        Short_Description: "Цветной холодный асфальт для выделения дорожных зон и покрытий.",
+        Short_Description_Preview: "Цветной холодный асфальт для выделения дорожных зон и покрытий.",
         Price_Rub: 1565, Unit_of_Measure: "мешок", Weight: "1000 кг", isFeatured: false, isCustomOrder: true, Show_Price_Note: true, Price_Note: "Уточняйте актуальную цену у менеджера", sortOrder: 700, category: catCold.documentId,
-        Full_Description: "<p>Красный холодный асфальт Perma Patch COLOR — декоративное покрытие для выделения пешеходных зон, велодорожек и специальных площадок. Уточняйте актуальную цену.</p>",
+        Short_Description: commonShortDescription,
+        Full_Description: textToRichText("Образцы холодного асфальта Perma Patch -COLOR:"),
         imageFile: "1000kg.jpg",
         galleryFiles: ["1000kg.jpg","red1.jpg","red2.jpg"],
       },
       {
         Title: "Красный Холодный асфальт в мешках Perma Patch - COLOR, 30 кг", Slug: "red-cold-asphalt-30kg",
-        Short_Description: "Цветной холодный асфальт для выделения дорожных зон и покрытий.",
+        Short_Description_Preview: "Цветной холодный асфальт для выделения дорожных зон и покрытий.",
         Price_Rub: 1565, Unit_of_Measure: "мешок", Weight: "30 кг", isFeatured: false, isCustomOrder: true, Show_Price_Note: true, Price_Note: "Уточняйте актуальную цену у менеджера", sortOrder: 800, category: catCold.documentId,
-        Full_Description: "<p>Красный холодный асфальт Perma Patch COLOR — декоративное покрытие для выделения пешеходных зон, велодорожек и специальных площадок. Уточняйте актуальную цену.</p>",
+        Short_Description: commonShortDescription,
+        Full_Description: textToRichText("Образцы холодного асфальта Perma Patch -COLOR:"),
         imageFile: "30-50kg.jpg",
         galleryFiles: ["30-50kg.jpg","red1.jpg","red2.jpg"],
       },
       {
         Title: "Вяжущее для холодного асфальта 205 л (185 кг)", Slug: "binder-perma-patch-205l",
-        Short_Description: "Вяжущее для производства холодного асфальта Perma Patch.",
+        Short_Description_Preview: "Вяжущее для производства холодного асфальта Perma Patch.",
         Price_Rub: 34385, Unit_of_Measure: "бочка", Weight: "185 кг", isFeatured: false, isCustomOrder: true, Show_Price_Note: true, Price_Note: "Уточняйте актуальную цену у менеджера", sortOrder: 900, category: catCold.documentId,
-        Full_Description: "<p>Вяжущее (концентрат) для производства холодного асфальта по канадской технологии Perma Patch. Объём 205 литров (185 кг).</p>",
+        Short_Description: commonShortDescription,
+        Full_Description: textToRichText(
+          "В состав вяжущего (соотношение 50 кг вяжущего, 950 кг щебня на 1000 кг готового холодного асфальта Perma Patch), входят:\n" +
+            "-\n" +
+            "Битум\n" +
+            "-\n" +
+            "Дизельное топливо\n" +
+            "-\n" +
+            "Концентрат Perma-Patch"
+        ),
         imageFile: "vyazhuschee.jpg",
         galleryFiles: ["vyazhuschee.jpg"],
       },
       {
         Title: "Мешки полиэтиленовые для холодного асфальта", Slug: "pe-bags-cold-asphalt",
-        Short_Description: "Мешки полиэтиленовые с заваренным дном, для пакетирования холодного асфальта по 25 или 30 кг.",
+        Short_Description_Preview: "Мешки полиэтиленовые с заваренным дном, для пакетирования холодного асфальта по 25 или 30 кг.",
         Price_Rub: 95, Unit_of_Measure: "шт.", Weight: "—", isFeatured: false, isCustomOrder: false, Show_Price_Note: true, Price_Note: "Уточняйте актуальную цену у менеджера", sortOrder: 1000, category: catBags.documentId,
         Full_Description: "<p>Мешки полиэтиленовые с заваренным дном, без боковых складок, для пакетирования холодного асфальта по 25 или 30 кг.</p>",
         imageFile: "meshki.jpg",
@@ -902,7 +1253,7 @@ export default {
         aboutTitle: "О компании",
         aboutText: "<p><strong>«Новые Технологии Асфальта – NovTecAs»</strong> специализируется на реализации холодного асфальта для ремонта дорожных покрытий.</p><p class=\"mt-4\">В основе продукта — концентрат <strong>Perma Patch</strong> от <strong>McAsphalt Industries Limited (Канада)</strong>, который зарекомендовал себя как эффективное решение для быстрого и удобного ямочного ремонта</p>.",
         aboutCtaLabel: "Подробнее о компании",
-        aboutCtaHref: "/company/about",
+        aboutCtaHref: "/about",
         advantagesTitle: "Преимущества компании",
         advantages: [
           { title: "Собственное производство", iconKey: "Factory" },
