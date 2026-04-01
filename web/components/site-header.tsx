@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Menu, Phone, X } from "lucide-react";
+import { Menu, Phone } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import {
@@ -14,6 +14,9 @@ import {
   NavigationMenuList,
   NavigationMenuTrigger,
 } from "@/components/ui/navigation-menu";
+import { CitySelector } from "@/components/city-selector";
+import { useCity } from "@/lib/city-context";
+import { getCityPhone, getCityPhoneHref, FALLBACK_PHONE } from "@/lib/cities";
 
 const NAV_ITEMS = [
   {
@@ -65,6 +68,10 @@ export function SiteHeader({
   onOpenContactModal,
   onOpenCallbackModal,
 }: SiteHeaderProps) {
+  const city = useCity();
+  const cityPhone = getCityPhone(city);
+  const cityPhoneHref = getCityPhoneHref(city);
+
   const [mobileOpen, setMobileOpen] = useState(false);
   const [visible, setVisible] = useState(true);
   const lastScrollY = useRef(0);
@@ -92,25 +99,44 @@ export function SiteHeader({
         visible ? "translate-y-0" : "-translate-y-full"
       }`}
     >
+      {/* Top bar with city selector and phone */}
+      <div className="border-b bg-muted/40">
+        <div className="container flex h-9 items-center justify-between text-xs">
+          <CitySelector />
+          <div className="flex items-center gap-3 text-base">
+            <a
+              href={cityPhoneHref}
+              className="flex items-center gap-1 font-medium hover:text-primary"
+            >
+              <Phone className="h-3.5 w-3.5" />
+              {cityPhone}
+            </a>
+            <span className="hidden text-muted-foreground sm:inline">
+              8 (800) 707-04-71
+            </span>
+          </div>
+        </div>
+      </div>
+
       <div className="container flex h-20 items-center justify-between gap-4">
-        <Link href="/" className="flex shrink-0 items-center gap-2">
+        <Link href="/" className="flex shrink-0 items-start gap-2 -mt-3">
           <Image
             src="/logo.svg"
             alt="Новтекас"
             width={480}
             height={156}
-            className="h-20 w-auto -translate-y-1"
+            className="h-14 w-auto"
             priority
           />
         </Link>
 
         {/* Desktop nav */}
-        <NavigationMenu className="hidden xl:flex">
+        <NavigationMenu className="hidden lg:flex">
           <NavigationMenuList>
             {NAV_ITEMS.map((item) =>
               item.children ? (
                 <NavigationMenuItem key={item.href}>
-                  <NavigationMenuTrigger className="text-sm">
+                  <NavigationMenuTrigger className="px-2 text-sm xl:px-4">
                     {item.label}
                   </NavigationMenuTrigger>
                   <NavigationMenuContent>
@@ -137,7 +163,7 @@ export function SiteHeader({
                   <NavigationMenuLink asChild>
                     <Link
                       href={item.href}
-                      className="inline-flex h-10 items-center justify-center rounded-md px-4 py-2 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground"
+                      className="inline-flex h-10 items-center justify-center rounded-md px-2 py-2 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground xl:px-4"
                     >
                       {item.label}
                     </Link>
@@ -148,14 +174,7 @@ export function SiteHeader({
           </NavigationMenuList>
         </NavigationMenu>
 
-        <div className="hidden shrink-0 items-center gap-3 xl:flex">
-          <a
-            href="tel:88007070471"
-            className="flex shrink-0 items-center gap-1.5 whitespace-nowrap text-sm font-medium"
-          >
-            <Phone className="h-4 w-4" />
-            8 (800) 707-04-71
-          </a>
+        <div className="hidden shrink-0 items-center gap-3 lg:flex">
           <Button size="sm" onClick={onOpenCallbackModal}>
             Заказать звонок
           </Button>
@@ -163,7 +182,7 @@ export function SiteHeader({
 
         {/* Mobile nav */}
         <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
-          <SheetTrigger asChild className="xl:hidden">
+          <SheetTrigger asChild className="lg:hidden">
             <Button variant="ghost" size="icon">
               <Menu className="h-5 w-5" />
               <span className="sr-only">Меню</span>
@@ -172,11 +191,18 @@ export function SiteHeader({
           <SheetContent side="right" className="w-[300px] sm:w-[360px]">
             <div className="flex flex-col gap-4 pt-8">
               <a
-                href="tel:88007070471"
+                href={cityPhoneHref}
                 className="flex items-center gap-2 text-sm font-medium"
               >
                 <Phone className="h-4 w-4" />
-                8 (800) 707-04-71
+                {cityPhone}
+              </a>
+              <a
+                href="tel:88007070471"
+                className="flex items-center gap-2 text-sm text-muted-foreground"
+              >
+                <Phone className="h-4 w-4" />
+                {FALLBACK_PHONE}
               </a>
               <p className="text-xs text-muted-foreground">08:00–20:00</p>
               <nav className="flex flex-col gap-1">

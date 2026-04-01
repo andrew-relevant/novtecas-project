@@ -4,6 +4,8 @@ import "./globals.css";
 import { LayoutClient } from "@/components/layout-client";
 import { SiteFooter } from "@/components/site-footer";
 import { YandexMetrika } from "@/components/yandex-metrika";
+import { getCityFromHeaders } from "@/lib/get-city";
+import { fetchCities } from "@/lib/cities";
 
 const inter = Inter({
   subsets: ["latin", "cyrillic"],
@@ -25,17 +27,24 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const [city, allCities] = await Promise.all([
+    getCityFromHeaders(),
+    fetchCities(),
+  ]);
+
   return (
     <html lang="ru" className={inter.variable}>
       <body className="min-h-screen font-sans antialiased">
         <YandexMetrika />
-        <LayoutClient>{children}</LayoutClient>
-        <SiteFooter />
+        <LayoutClient city={city} allCities={allCities}>
+          {children}
+        </LayoutClient>
+        <SiteFooter city={city} />
       </body>
     </html>
   );

@@ -6,13 +6,23 @@ import { ModalForm } from "@/components/modal-form";
 import { ContactForm } from "@/components/forms/contact-form";
 import { CallbackForm } from "@/components/forms/callback-form";
 import { Toaster } from "@/components/ui/toaster";
+import { CityProvider } from "@/lib/city-context";
+import type { City } from "@/lib/cities";
 
-export function LayoutClient({ children }: { children: React.ReactNode }) {
+export function LayoutClient({
+  city,
+  allCities,
+  children,
+}: {
+  city: City;
+  allCities: City[];
+  children: React.ReactNode;
+}) {
   const [contactOpen, setContactOpen] = useState(false);
   const [callbackOpen, setCallbackOpen] = useState(false);
 
   return (
-    <>
+    <CityProvider city={city} allCities={allCities}>
       <SiteHeader
         onOpenContactModal={() => setContactOpen(true)}
         onOpenCallbackModal={() => setCallbackOpen(true)}
@@ -36,6 +46,6 @@ export function LayoutClient({ children }: { children: React.ReactNode }) {
       </ModalForm>
 
       <Toaster />
-    </>
+    </CityProvider>
   );
 }

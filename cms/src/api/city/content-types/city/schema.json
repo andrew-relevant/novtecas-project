@@ -1,0 +1,61 @@
+{
+  "kind": "collectionType",
+  "collectionName": "cities",
+  "info": {
+    "singularName": "city",
+    "pluralName": "cities",
+    "displayName": "City",
+    "description": "Города для мультисайтовости"
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "name": {
+      "type": "string",
+      "required": true,
+      "unique": true
+    },
+    "slug": {
+      "type": "string",
+      "unique": true
+    },
+    "domain": {
+      "type": "string",
+      "required": true
+    },
+    "namePrepositional": {
+      "type": "string"
+    },
+    "nameDative": {
+      "type": "string"
+    },
+    "phones": {
+      "type": "json"
+    },
+    "postalCode": {
+      "type": "string"
+    },
+    "address": {
+      "type": "text"
+    },
+    "warehouseAddress": {
+      "type": "text"
+    },
+    "mapLat": {
+      "type": "float"
+    },
+    "mapLng": {
+      "type": "float"
+    },
+    "sortOrder": {
+      "type": "integer",
+      "default": 500
+    },
+    "isDefault": {
+      "type": "boolean",
+      "default": false
+    }
+  }
+}

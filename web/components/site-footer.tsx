@@ -2,6 +2,8 @@ import Image from "next/image";
 import Link from "next/link";
 import { Phone, Mail, MapPin } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
+import type { City } from "@/lib/cities";
+import { getCityPhone, FALLBACK_PHONE } from "@/lib/cities";
 
 const FOOTER_NAV = [
   { label: "О компании", href: "/about" },
@@ -12,7 +14,16 @@ const FOOTER_NAV = [
   { label: "Контакты", href: "/contacts" },
 ];
 
-export function SiteFooter() {
+interface SiteFooterProps {
+  city: City;
+}
+
+export function SiteFooter({ city }: SiteFooterProps) {
+  const cityPhone = getCityPhone(city);
+  const cityPhoneHref = `tel:${cityPhone.replace(/[^+\d]/g, "")}`;
+
+  const displayAddress = city.address || city.warehouseAddress;
+
   return (
     <footer className="border-t bg-secondary">
       <div className="container py-10">
@@ -49,22 +60,26 @@ export function SiteFooter() {
           </div>
 
           <div>
-            <h4 className="mb-3 text-sm font-semibold">Контакты</h4>
+            <h4 className="mb-3 text-sm font-semibold">
+              Контакты{city.name !== "Москва" ? ` в ${city.namePrepositional}` : ""}
+            </h4>
             <div className="flex flex-col gap-2 text-sm text-muted-foreground">
               <a
-                href="tel:88007070471"
+                href={cityPhoneHref}
                 className="flex items-center gap-2 hover:text-foreground"
               >
                 <Phone className="h-4 w-4 shrink-0" />
-                8 (800) 707-04-71
+                {cityPhone}
               </a>
-              <a
-                href="tel:+74995044163"
-                className="flex items-center gap-2 hover:text-foreground"
-              >
-                <Phone className="h-4 w-4 shrink-0" />
-                +7 (499) 504-41-63
-              </a>
+              {cityPhone !== FALLBACK_PHONE && (
+                <a
+                  href="tel:88007070471"
+                  className="flex items-center gap-2 hover:text-foreground"
+                >
+                  <Phone className="h-4 w-4 shrink-0" />
+                  {FALLBACK_PHONE}
+                </a>
+              )}
               <a
                 href="mailto:asfalt@NovTecAs.ru"
                 className="flex items-center gap-2 hover:text-foreground"
@@ -72,13 +87,16 @@ export function SiteFooter() {
                 <Mail className="h-4 w-4 shrink-0" />
                 asfalt@NovTecAs.ru
               </a>
-              <div className="flex items-start gap-2">
-                <MapPin className="mt-0.5 h-4 w-4 shrink-0" />
-                <span>
-                  119180, г. Москва<br/> ул. Большая Полянка, д. 51А/9, этаж 8,
-                  помещение&nbsp;1
-                </span>
-              </div>
+              {displayAddress && (
+                <div className="flex items-start gap-2">
+                  <MapPin className="mt-0.5 h-4 w-4 shrink-0" />
+                  <span>
+                    {city.postalCode ? `${city.postalCode}, ` : ""}
+                    {city.name !== "Москва" ? `г. ${city.name}, ` : ""}
+                    {displayAddress}
+                  </span>
+                </div>
+              )}
               <p className="text-xs">Часы работы: 08:00–20:00</p>
             </div>
           </div>
